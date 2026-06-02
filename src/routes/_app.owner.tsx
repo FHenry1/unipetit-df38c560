@@ -8,7 +8,7 @@ export const Route = createFileRoute("/_app/owner")({
 });
 
 function OwnerDashboard() {
-  const { user, mySnackbar, logout, updateMySnackbar, addMenuItem, removeMenuItem } =
+  const { user, mySnackbar, logout, updateMySnackbar, addMenuItem, removeMenuItem, exitOwnerMode } =
     useAuth();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
@@ -162,6 +162,16 @@ function OwnerDashboard() {
       >
         Ver página pública
       </Link>
+
+      <button
+        onClick={() => {
+          exitOwnerMode();
+          navigate({ to: "/home" });
+        }}
+        className="mt-3 w-full rounded-xl border border-border bg-surface py-3 text-center text-sm font-semibold text-surface-foreground"
+      >
+        Sair do modo Proprietário
+      </button>
 
       {adding && (
         <Modal onClose={() => setAdding(false)} title="Novo item do menu">
