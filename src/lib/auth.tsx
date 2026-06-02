@@ -212,6 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signup,
         logout,
         becomeOwner,
+        exitOwnerMode,
         toggleFavorite,
         updateMySnackbar,
         addMenuItem,
