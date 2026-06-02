@@ -21,7 +21,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "UniPetit: descubra lanchonetes próximas, avalie, favorite e divulgue a sua. Guia digital móvel-primeiro.",
       },
-      { property: "og:title", content: "UniPetit" },
+      { property: "og:title", content: "UniPetit — Guia digital de lanchonetes" },
       {
         property: "og:description",
         content: "Guia digital de lanchonetes locais.",
@@ -31,6 +31,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "viewport",
         content: "width=device-width, initial-scale=1",
       },
+      { name: "twitter:title", content: "UniPetit — Guia digital de lanchonetes" },
+      { name: "description", content: "UniPetit Connect is a mobile-first web app that guides users to local eateries and empowers owners." },
+      { property: "og:description", content: "UniPetit Connect is a mobile-first web app that guides users to local eateries and empowers owners." },
+      { name: "twitter:description", content: "UniPetit Connect is a mobile-first web app that guides users to local eateries and empowers owners." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/eaaae9bc-1b31-4c18-a007-750f74aada4d/id-preview-70206e1c--4f468062-54b3-4601-9bbd-9d68479d758e.lovable.app-1780408535068.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/eaaae9bc-1b31-4c18-a007-750f74aada4d/id-preview-70206e1c--4f468062-54b3-4601-9bbd-9d68479d758e.lovable.app-1780408535068.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
