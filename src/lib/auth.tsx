@@ -22,6 +22,7 @@ interface AuthContextValue {
   signup: (name: string, email: string, password: string) => { ok: boolean; error?: string };
   logout: () => void;
   becomeOwner: () => void;
+  exitOwnerMode: () => void;
   toggleFavorite: (snackbarId: string) => void;
   updateMySnackbar: (patch: Partial<SnackBar>) => void;
   addMenuItem: (item: Omit<MenuItem, "id">) => void;
@@ -140,6 +141,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const exitOwnerMode = () => {
+    if (!user) return;
+    setState((s) => ({
+      ...s,
+      users: s.users.map((u) =>
+        u.id === user.id ? { ...u, role: "user" as Role } : u,
+      ),
+    }));
+  };
+
   const toggleFavorite = (snackbarId: string) => {
     if (!user) return;
     setState((s) => ({
@@ -201,6 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signup,
         logout,
         becomeOwner,
+        exitOwnerMode,
         toggleFavorite,
         updateMySnackbar,
         addMenuItem,

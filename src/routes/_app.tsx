@@ -18,9 +18,9 @@ function AppShell() {
   if (!user) return null;
 
   return (
-    <div className="mx-auto min-h-screen max-w-md pb-20">
+    <div className={`mx-auto min-h-screen max-w-md ${user.role === "owner" ? "" : "pb-20"}`}>
       <Outlet />
-      <BottomNav />
+      {user.role !== "owner" && <BottomNav />}
     </div>
   );
 }
