@@ -141,6 +141,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const exitOwnerMode = () => {
+    if (!user) return;
+    setState((s) => ({
+      ...s,
+      users: s.users.map((u) =>
+        u.id === user.id ? { ...u, role: "user" as Role } : u,
+      ),
+    }));
+  };
+
   const toggleFavorite = (snackbarId: string) => {
     if (!user) return;
     setState((s) => ({
