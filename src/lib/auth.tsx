@@ -59,11 +59,21 @@ function saveState(s: PersistedState) {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<PersistedState>(() => loadState());
+  const [state, setState] = useState<PersistedState>({
+    users: INITIAL_USERS,
+    snackbars: INITIAL_SNACKBARS,
+    currentUserId: null,
+  });
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    saveState(state);
-  }, [state]);
+    setState(loadState());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) saveState(state);
+  }, [state, hydrated]);
 
   const user = state.users.find((u) => u.id === state.currentUserId) ?? null;
   const mySnackbar =
