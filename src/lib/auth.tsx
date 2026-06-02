@@ -22,6 +22,7 @@ interface AuthContextValue {
   signup: (name: string, email: string, password: string) => { ok: boolean; error?: string };
   logout: () => void;
   becomeOwner: () => void;
+  exitOwnerMode: () => void;
   toggleFavorite: (snackbarId: string) => void;
   updateMySnackbar: (patch: Partial<SnackBar>) => void;
   addMenuItem: (item: Omit<MenuItem, "id">) => void;
