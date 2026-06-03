@@ -228,6 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         logout,
+        resetPassword,
         becomeOwner,
         exitOwnerMode,
         toggleFavorite,
