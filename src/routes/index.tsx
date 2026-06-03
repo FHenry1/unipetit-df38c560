@@ -48,7 +48,7 @@ function Landing() {
             width: modalOpen
               ? screen === "selection"
                 ? "min(90vw, 50vh, 400px)"
-                : "min(55vw, 28vh, 220px)"
+                : "min(75vw, 38vh, 300px)"
               : "min(95vw, 80vh, 500px)",
             height: "auto",
             maxWidth: "100%",
