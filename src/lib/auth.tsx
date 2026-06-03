@@ -21,6 +21,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => { ok: boolean; error?: string };
   signup: (name: string, email: string, password: string) => { ok: boolean; error?: string };
   logout: () => void;
+  resetPassword: (email: string, newPassword: string) => { ok: boolean; error?: string };
   becomeOwner: () => void;
   exitOwnerMode: () => void;
   toggleFavorite: (snackbarId: string) => void;
@@ -112,6 +113,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => setState((s) => ({ ...s, currentUserId: null }));
+
+  const resetPassword: AuthContextValue["resetPassword"] = (email, newPassword) => {
+    const found = state.users.find(
+      (u) => u.email.toLowerCase() === email.toLowerCase(),
+    );
+    if (!found) return { ok: false, error: "E-mail não encontrado" };
+    if (newPassword.length < 6)
+      return { ok: false, error: "A senha deve ter ao menos 6 caracteres" };
+    setState((s) => ({
+      ...s,
+      users: s.users.map((u) =>
+        u.id === found.id ? { ...u, password: newPassword } : u,
+      ),
+    }));
+    return { ok: true };
+  };
 
   const becomeOwner = () => {
     if (!user) return;
@@ -211,6 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         logout,
+        resetPassword,
         becomeOwner,
         exitOwnerMode,
         toggleFavorite,

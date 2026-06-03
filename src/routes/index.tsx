@@ -8,10 +8,10 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-type Screen = "selection" | "login" | "signup";
+type Screen = "selection" | "login" | "signup" | "forgot";
 
 function Landing() {
-  const { user, login, signup } = useAuth();
+  const { user, login, signup, resetPassword } = useAuth();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [screen, setScreen] = useState<Screen>("selection");
@@ -72,6 +72,7 @@ function Landing() {
         {screen === "login" && (
           <LoginForm
             onBack={() => setScreen("selection")}
+            onForgot={() => setScreen("forgot")}
             onSubmit={(email, password) => {
               const res = login(email, password);
               if (res.ok) {
@@ -91,6 +92,12 @@ function Landing() {
               }
               return res;
             }}
+          />
+        )}
+        {screen === "forgot" && (
+          <ForgotForm
+            onBack={() => setScreen("login")}
+            onSubmit={(email, password) => resetPassword(email, password)}
           />
         )}
       </div>
@@ -136,9 +143,11 @@ function Selection({
 
 function LoginForm({
   onBack,
+  onForgot,
   onSubmit,
 }: {
   onBack: () => void;
+  onForgot: () => void;
   onSubmit: (email: string, password: string) => { ok: boolean; error?: string };
 }) {
   const [email, setEmail] = useState("");
@@ -199,8 +208,16 @@ function LoginForm({
 
       <button
         type="button"
+        onClick={onForgot}
+        className="mt-4 text-center text-xs font-semibold text-[#5d0a1a] hover:underline"
+      >
+        Esqueci minha senha
+      </button>
+
+      <button
+        type="button"
         onClick={onBack}
-        className="mt-3 text-center text-xs font-semibold text-neutral-500 hover:text-[#5d0a1a]"
+        className="mt-2 text-center text-xs font-semibold text-neutral-500 hover:text-[#5d0a1a]"
       >
         ← Voltar
       </button>
@@ -313,5 +330,121 @@ function Field({
       <span className="text-neutral-400">{icon}</span>
       {children}
     </label>
+  );
+}
+
+function ForgotForm({
+  onBack,
+  onSubmit,
+}: {
+  onBack: () => void;
+  onSubmit: (email: string, password: string) => { ok: boolean; error?: string };
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  if (success) {
+    return (
+      <div className="flex flex-col items-center text-center">
+        <h2 className="text-2xl font-extrabold text-[#2a0a10]">
+          Senha redefinida!
+        </h2>
+        <p className="mt-2 text-sm text-neutral-500">
+          Sua nova senha foi salva. Use-a para entrar.
+        </p>
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-6 w-full rounded-2xl bg-[#5d0a1a] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(93,10,26,0.7)] transition active:scale-[0.98]"
+        >
+          Ir para o login
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        setError(null);
+        if (password.length < 6) {
+          setError("A senha deve ter ao menos 6 caracteres");
+          return;
+        }
+        if (password !== confirm) {
+          setError("As senhas não conferem");
+          return;
+        }
+        const r = onSubmit(email, password);
+        if (!r.ok) setError(r.error ?? "Erro ao redefinir senha");
+        else setSuccess(true);
+      }}
+      className="flex flex-col"
+    >
+      <h2 className="text-center text-2xl font-extrabold text-[#2a0a10]">
+        Esqueci minha senha
+      </h2>
+      <p className="mt-1 text-center text-sm text-neutral-500">
+        Informe seu e-mail e defina uma nova senha
+      </p>
+
+      <div className="mt-6 space-y-3">
+        <Field icon={<Mail size={16} />}>
+          <input
+            type="email"
+            placeholder="E-mail cadastrado"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
+          />
+        </Field>
+        <Field icon={<Lock size={16} />}>
+          <input
+            type="password"
+            placeholder="Nova senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
+          />
+        </Field>
+        <Field icon={<Lock size={16} />}>
+          <input
+            type="password"
+            placeholder="Confirmar nova senha"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            required
+            className="w-full bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
+          />
+        </Field>
+      </div>
+
+      {error && (
+        <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        className="mt-6 w-full rounded-2xl bg-[#5d0a1a] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(93,10,26,0.7)] transition active:scale-[0.98]"
+      >
+        Redefinir senha
+      </button>
+
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-3 text-center text-xs font-semibold text-neutral-500 hover:text-[#5d0a1a]"
+      >
+        ← Voltar
+      </button>
+    </form>
   );
 }
