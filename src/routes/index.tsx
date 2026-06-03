@@ -34,21 +34,25 @@ function Landing() {
       className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-[#5d0a1a] select-none"
       style={{ cursor: triggered ? "default" : "pointer" }}
     >
-      {/* Logo block — shrinks and rises when modal opens */}
+      {/* Logo block — responsive; re-centers in available space above modal */}
       <div
-        className="z-10 flex flex-col items-center transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
+        className="absolute left-1/2 z-10 flex -translate-x-1/2 flex-col items-center transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
         style={{
-          transform: modalOpen
-            ? "translateY(-28vh) scale(0.45)"
-            : "translateY(0) scale(1)",
-          transformOrigin: "center center",
+          top: modalOpen ? "3vh" : "50%",
+          transform: modalOpen ? "translate(-50%, 0)" : "translate(-50%, -50%)",
         }}
       >
         <img
           src={logoAsset.url}
           alt="UniPetit Logo"
           className="object-contain drop-shadow-2xl"
-          style={{ width: 500, height: 500 }}
+          style={{
+            width: modalOpen
+              ? "min(60vw, 32vh, 260px)"
+              : "min(85vw, 70vh, 500px)",
+            height: "auto",
+            maxWidth: "100%",
+          }}
           draggable={false}
         />
         {!triggered && (
