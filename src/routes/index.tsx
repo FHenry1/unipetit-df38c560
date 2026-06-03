@@ -8,10 +8,10 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-type Screen = "selection" | "login" | "signup";
+type Screen = "selection" | "login" | "signup" | "forgot";
 
 function Landing() {
-  const { user, login, signup } = useAuth();
+  const { user, login, signup, resetPassword } = useAuth();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [screen, setScreen] = useState<Screen>("selection");
@@ -72,6 +72,7 @@ function Landing() {
         {screen === "login" && (
           <LoginForm
             onBack={() => setScreen("selection")}
+            onForgot={() => setScreen("forgot")}
             onSubmit={(email, password) => {
               const res = login(email, password);
               if (res.ok) {
@@ -91,6 +92,12 @@ function Landing() {
               }
               return res;
             }}
+          />
+        )}
+        {screen === "forgot" && (
+          <ForgotForm
+            onBack={() => setScreen("login")}
+            onSubmit={(email, password) => resetPassword(email, password)}
           />
         )}
       </div>
