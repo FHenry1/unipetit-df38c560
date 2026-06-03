@@ -15,9 +15,9 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = login(email, password);
+    const res = await login(email, password);
     if (!res.ok) {
       setError(res.error ?? "Erro");
       return;
@@ -73,11 +73,6 @@ function LoginPage() {
 
         <BrandButton type="submit">Acessar</BrandButton>
 
-        <p className="text-center text-[11px] text-muted-foreground">
-          Demo: <strong>user@unipetit.com</strong> ou{" "}
-          <strong>owner@lanchonete.com</strong> — senha{" "}
-          <strong>password123</strong>
-        </p>
       </form>
     </AuthCard>
   );

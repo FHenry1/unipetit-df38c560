@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Star } from "lucide-react";
-import type { SnackBar } from "@/lib/mockData";
+import type { SnackBar } from "@/lib/auth";
 
 export function SnackBarCard({ s }: { s: SnackBar }) {
   return (
