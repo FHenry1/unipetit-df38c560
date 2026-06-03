@@ -46,7 +46,9 @@ function Landing() {
           className="object-contain drop-shadow-2xl text-lg transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] will-change-[width,transform]"
           style={{
             width: modalOpen
-              ? "min(90vw, 50vh, 400px)"
+              ? screen === "selection"
+                ? "min(90vw, 50vh, 400px)"
+                : "min(55vw, 28vh, 220px)"
               : "min(95vw, 80vh, 500px)",
             height: "auto",
             maxWidth: "100%",
