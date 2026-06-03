@@ -43,13 +43,14 @@ function Landing() {
         <img
           src={logoAsset.url}
           alt="UniPetit Logo"
-          className="object-contain drop-shadow-2xl text-lg"
+          className="object-contain drop-shadow-2xl text-lg transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] will-change-[width,transform]"
           style={{
             width: modalOpen
               ? "min(48vw, 26vh, 210px)"
               : "min(85vw, 70vh, 500px)",
             height: "auto",
             maxWidth: "100%",
+            transform: modalOpen ? "scale(1)" : "scale(1.02)",
           }}
           draggable={false}
         />
