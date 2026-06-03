@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Lock, Mail, User } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import logoAsset from "@/assets/unipetit-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -41,7 +42,7 @@ function Landing() {
         }}
       >
         <img
-          src="https://Feat02.github.io/UniPetit/unipetit.png"
+          src={logoAsset.url}
           alt="UniPetit Logo"
           className="h-44 w-44 object-contain drop-shadow-2xl"
           draggable={false}
