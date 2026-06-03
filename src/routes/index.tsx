@@ -143,9 +143,11 @@ function Selection({
 
 function LoginForm({
   onBack,
+  onForgot,
   onSubmit,
 }: {
   onBack: () => void;
+  onForgot: () => void;
   onSubmit: (email: string, password: string) => { ok: boolean; error?: string };
 }) {
   const [email, setEmail] = useState("");
@@ -206,8 +208,16 @@ function LoginForm({
 
       <button
         type="button"
+        onClick={onForgot}
+        className="mt-4 text-center text-xs font-semibold text-[#5d0a1a] hover:underline"
+      >
+        Esqueci minha senha
+      </button>
+
+      <button
+        type="button"
         onClick={onBack}
-        className="mt-3 text-center text-xs font-semibold text-neutral-500 hover:text-[#5d0a1a]"
+        className="mt-2 text-center text-xs font-semibold text-neutral-500 hover:text-[#5d0a1a]"
       >
         ← Voltar
       </button>
