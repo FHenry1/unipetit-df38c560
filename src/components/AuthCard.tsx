@@ -15,10 +15,10 @@ export function AuthCard({
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
+        <div className="mb-5 flex justify-center">
+          <Logo />
+        </div>
         <div className="rounded-3xl bg-surface text-surface-foreground shadow-card p-7">
-          <div className="mb-5 flex justify-center">
-            <Logo />
-          </div>
           {title && (
             <h1 className="text-center text-lg font-semibold text-surface-foreground">
               {title}
