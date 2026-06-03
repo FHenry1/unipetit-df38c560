@@ -36,7 +36,7 @@ function Landing() {
       <div
         className="absolute left-0 right-0 z-10 flex flex-col items-center transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
         style={{
-          top: modalOpen ? "3vh" : "50%",
+          top: modalOpen ? "1.5vh" : "50%",
           transform: modalOpen ? "translateY(0)" : "translateY(-50%)",
         }}
       >
@@ -46,7 +46,7 @@ function Landing() {
           className="object-contain drop-shadow-2xl text-lg"
           style={{
             width: modalOpen
-              ? "min(60vw, 32vh, 260px)"
+              ? "min(48vw, 26vh, 210px)"
               : "min(85vw, 70vh, 500px)",
             height: "auto",
             maxWidth: "100%",
