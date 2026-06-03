@@ -18,13 +18,13 @@ function SignupPage() {
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (password !== confirm) return setError("As senhas não coincidem");
     if (password.length < 6) return setError("Senha deve ter ao menos 6 caracteres");
     if (!accepted) return setError("Você precisa aceitar os Termos de Uso");
-    const res = signup(name, email, password);
+    const res = await signup(name, email, password);
     if (!res.ok) return setError(res.error ?? "Erro");
     navigate({ to: "/home" });
   };
