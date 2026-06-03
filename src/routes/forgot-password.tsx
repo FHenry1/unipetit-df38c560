@@ -39,7 +39,10 @@ function ForgotPage() {
             const r = await requestPasswordReset(email);
             setLoading(false);
             if (!r.ok) setError(r.error ?? "Erro");
-            else setSent(true);
+            else {
+              try { sessionStorage.setItem("pwd_reset_email", email); } catch {}
+              setSent(true);
+            }
           }}
           className="space-y-4"
         >
