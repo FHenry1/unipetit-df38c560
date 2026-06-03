@@ -42,7 +42,7 @@ function Landing() {
         }}
       >
         <img
-          src="https://Feat02.github.io/UniPetit/unipetit.png"
+          src={logoAsset.url}
           alt="UniPetit Logo"
           className="h-44 w-44 object-contain drop-shadow-2xl"
           draggable={false}
