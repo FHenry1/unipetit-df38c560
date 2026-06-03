@@ -11,7 +11,7 @@ export const Route = createFileRoute("/")({
 type Screen = "selection" | "login" | "signup" | "forgot";
 
 function Landing() {
-  const { user, login, signup, resetPassword } = useAuth();
+  const { user, login, signup, requestPasswordReset } = useAuth();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [screen, setScreen] = useState<Screen>("selection");
@@ -24,7 +24,6 @@ function Landing() {
   const handleTrigger = () => {
     if (triggered) return;
     setTriggered(true);
-    // small delay so logo translation can settle before modal appears
     setTimeout(() => setModalOpen(true), 80);
   };
 
@@ -34,7 +33,6 @@ function Landing() {
       className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-[#5d0a1a] select-none"
       style={{ cursor: triggered ? "default" : "pointer" }}
     >
-      {/* Logo block — responsive; re-centers in available space above modal */}
       <div
         className="absolute left-0 right-0 z-10 flex flex-col items-center transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
         style={{
@@ -62,7 +60,6 @@ function Landing() {
         )}
       </div>
 
-      {/* Slide-up modal */}
       <div
         className="absolute left-1/2 z-20 w-full max-w-[440px] -translate-x-1/2 rounded-t-[32px] bg-white px-7 py-10 transition-[bottom] duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
         style={{
@@ -80,11 +77,9 @@ function Landing() {
           <LoginForm
             onBack={() => setScreen("selection")}
             onForgot={() => setScreen("forgot")}
-            onSubmit={(email, password) => {
-              const res = login(email, password);
-              if (res.ok) {
-                navigate({ to: "/home" });
-              }
+            onSubmit={async (email, password) => {
+              const res = await login(email, password);
+              if (res.ok) navigate({ to: "/home" });
               return res;
             }}
           />
@@ -92,11 +87,9 @@ function Landing() {
         {screen === "signup" && (
           <SignupForm
             onBack={() => setScreen("selection")}
-            onSubmit={(name, email, password) => {
-              const res = signup(name, email, password);
-              if (res.ok) {
-                navigate({ to: "/home" });
-              }
+            onSubmit={async (name, email, password) => {
+              const res = await signup(name, email, password);
+              if (res.ok) navigate({ to: "/home" });
               return res;
             }}
           />
@@ -104,15 +97,13 @@ function Landing() {
         {screen === "forgot" && (
           <ForgotForm
             onBack={() => setScreen("login")}
-            onSubmit={(email, password) => resetPassword(email, password)}
+            onSubmit={(email) => requestPasswordReset(email)}
           />
         )}
       </div>
     </main>
   );
 }
-
-/* ---------- Sub screens ---------- */
 
 function Selection({
   onLogin,
@@ -140,10 +131,6 @@ function Selection({
       >
         Cadastrar-se
       </button>
-
-      <p className="mt-6 text-[11px] text-neutral-400">
-        Demo: <strong>user@unipetit.com</strong> / <strong>password123</strong>
-      </p>
     </div>
   );
 }
@@ -155,24 +142,25 @@ function LoginForm({
 }: {
   onBack: () => void;
   onForgot: () => void;
-  onSubmit: (email: string, password: string) => { ok: boolean; error?: string };
+  onSubmit: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        const r = onSubmit(email, password);
+        setLoading(true);
+        const r = await onSubmit(email, password);
+        setLoading(false);
         if (!r.ok) setError(r.error ?? "Erro ao entrar");
       }}
       className="flex flex-col"
     >
-      <h2 className="text-center text-2xl font-extrabold text-[#2a0a10]">
-        Entrar
-      </h2>
+      <h2 className="text-center text-2xl font-extrabold text-[#2a0a10]">Entrar</h2>
       <p className="mt-1 text-center text-sm text-neutral-500">
         Acesse sua conta UniPetit
       </p>
@@ -208,9 +196,10 @@ function LoginForm({
 
       <button
         type="submit"
-        className="mt-6 w-full rounded-2xl bg-[#5d0a1a] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(93,10,26,0.7)] transition active:scale-[0.98]"
+        disabled={loading}
+        className="mt-6 w-full rounded-2xl bg-[#5d0a1a] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(93,10,26,0.7)] transition active:scale-[0.98] disabled:opacity-60"
       >
-        Entrar
+        {loading ? "Entrando..." : "Entrar"}
       </button>
 
       <button
@@ -241,22 +230,25 @@ function SignupForm({
     name: string,
     email: string,
     password: string,
-  ) => { ok: boolean; error?: string };
+  ) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         if (password.length < 6) {
           setError("A senha deve ter ao menos 6 caracteres");
           return;
         }
-        const r = onSubmit(name, email, password);
+        setLoading(true);
+        const r = await onSubmit(name, email, password);
+        setLoading(false);
         if (!r.ok) setError(r.error ?? "Erro ao cadastrar");
       }}
       className="flex flex-col"
@@ -292,7 +284,7 @@ function SignupForm({
         <Field icon={<Lock size={16} />}>
           <input
             type="password"
-            placeholder="Senha"
+            placeholder="Senha (mín. 6 caracteres)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -309,9 +301,10 @@ function SignupForm({
 
       <button
         type="submit"
-        className="mt-6 w-full rounded-2xl bg-[#5d0a1a] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(93,10,26,0.7)] transition active:scale-[0.98]"
+        disabled={loading}
+        className="mt-6 w-full rounded-2xl bg-[#5d0a1a] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(93,10,26,0.7)] transition active:scale-[0.98] disabled:opacity-60"
       >
-        Criar conta
+        {loading ? "Criando..." : "Criar conta"}
       </button>
 
       <button
@@ -345,29 +338,31 @@ function ForgotForm({
   onSubmit,
 }: {
   onBack: () => void;
-  onSubmit: (email: string, password: string) => { ok: boolean; error?: string };
+  onSubmit: (email: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   if (success) {
     return (
       <div className="flex flex-col items-center text-center">
-        <h2 className="text-2xl font-extrabold text-[#2a0a10]">
-          Senha redefinida!
-        </h2>
-        <p className="mt-2 text-sm text-neutral-500">
-          Sua nova senha foi salva. Use-a para entrar.
+        <h2 className="text-2xl font-extrabold text-[#2a0a10]">Verifique seu e-mail</h2>
+        <p className="mt-3 text-sm text-neutral-600">
+          Enviamos um link de confirmação para
+          <br />
+          <strong className="text-[#5d0a1a]">{email}</strong>
+        </p>
+        <p className="mt-3 text-xs text-neutral-500">
+          Clique no link recebido para confirmar que é você e definir uma nova senha.
         </p>
         <button
           type="button"
           onClick={onBack}
           className="mt-6 w-full rounded-2xl bg-[#5d0a1a] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(93,10,26,0.7)] transition active:scale-[0.98]"
         >
-          Ir para o login
+          Voltar para o login
         </button>
       </div>
     );
@@ -375,19 +370,13 @@ function ForgotForm({
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         setError(null);
-        if (password.length < 6) {
-          setError("A senha deve ter ao menos 6 caracteres");
-          return;
-        }
-        if (password !== confirm) {
-          setError("As senhas não conferem");
-          return;
-        }
-        const r = onSubmit(email, password);
-        if (!r.ok) setError(r.error ?? "Erro ao redefinir senha");
+        setLoading(true);
+        const r = await onSubmit(email);
+        setLoading(false);
+        if (!r.ok) setError(r.error ?? "Erro ao enviar e-mail");
         else setSuccess(true);
       }}
       className="flex flex-col"
@@ -396,36 +385,16 @@ function ForgotForm({
         Esqueci minha senha
       </h2>
       <p className="mt-1 text-center text-sm text-neutral-500">
-        Informe seu e-mail e defina uma nova senha
+        Enviaremos um link para o seu e-mail confirmar que é você
       </p>
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-6">
         <Field icon={<Mail size={16} />}>
           <input
             type="email"
             placeholder="E-mail cadastrado"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
-          />
-        </Field>
-        <Field icon={<Lock size={16} />}>
-          <input
-            type="password"
-            placeholder="Nova senha"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
-          />
-        </Field>
-        <Field icon={<Lock size={16} />}>
-          <input
-            type="password"
-            placeholder="Confirmar nova senha"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
             required
             className="w-full bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
           />
@@ -440,9 +409,10 @@ function ForgotForm({
 
       <button
         type="submit"
-        className="mt-6 w-full rounded-2xl bg-[#5d0a1a] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(93,10,26,0.7)] transition active:scale-[0.98]"
+        disabled={loading}
+        className="mt-6 w-full rounded-2xl bg-[#5d0a1a] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(93,10,26,0.7)] transition active:scale-[0.98] disabled:opacity-60"
       >
-        Redefinir senha
+        {loading ? "Enviando..." : "Enviar link de confirmação"}
       </button>
 
       <button
