@@ -1,6 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { CATEGORIES } from "@/lib/mockData";
+const CATEGORIES = [
+  { id: "burger", label: "Hambúrguer", emoji: "🍔" },
+  { id: "hotdog", label: "Hot Dog", emoji: "🌭" },
+  { id: "pastel", label: "Pastel", emoji: "🥟" },
+  { id: "pizza", label: "Pizza", emoji: "🍕" },
+  { id: "drinks", label: "Bebidas", emoji: "🥤" },
+  { id: "sweets", label: "Doces", emoji: "🍩" },
+];
 import { useAuth } from "@/lib/auth";
 import { SnackBarCard } from "@/components/SnackBarCard";
 

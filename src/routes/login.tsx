@@ -73,11 +73,6 @@ function LoginPage() {
 
         <BrandButton type="submit">Acessar</BrandButton>
 
-        <p className="text-center text-[11px] text-muted-foreground">
-          Demo: <strong>user@unipetit.com</strong> ou{" "}
-          <strong>owner@lanchonete.com</strong> — senha{" "}
-          <strong>password123</strong>
-        </p>
       </form>
     </AuthCard>
   );
