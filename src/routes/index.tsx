@@ -44,7 +44,8 @@ function Landing() {
         <img
           src={logoAsset.url}
           alt="UniPetit Logo"
-          className="h-72 w-72 object-contain drop-shadow-2xl"
+          className="object-contain drop-shadow-2xl"
+          style={{ width: 350, height: 350 }}
           draggable={false}
         />
         {!triggered && (
