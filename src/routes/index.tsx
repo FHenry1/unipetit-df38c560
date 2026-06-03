@@ -36,10 +36,10 @@ function Landing() {
     >
       {/* Logo block — responsive; re-centers in available space above modal */}
       <div
-        className="absolute left-1/2 z-10 flex -translate-x-1/2 flex-col items-center transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
+        className="absolute left-0 right-0 z-10 flex flex-col items-center transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
         style={{
           top: modalOpen ? "3vh" : "50%",
-          transform: modalOpen ? "translate(-50%, 0)" : "translate(-50%, -50%)",
+          transform: modalOpen ? "translateY(0)" : "translateY(-50%)",
         }}
       >
         <img
