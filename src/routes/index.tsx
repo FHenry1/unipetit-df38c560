@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Lock, Mail, User } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import logoAsset from "@/assets/unipetit-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   component: Landing,
