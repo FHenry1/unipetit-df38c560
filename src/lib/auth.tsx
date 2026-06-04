@@ -30,6 +30,16 @@ export interface SnackBar {
   menu_items: MenuItem[];
 }
 
+export interface Review {
+  id: string;
+  snackbar_id: string;
+  user_id: string;
+  user_name: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
