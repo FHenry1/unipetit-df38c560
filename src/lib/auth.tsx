@@ -183,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     await Promise.all([loadUser(session), loadSnackbars(), loadReviews()]);
-  }, [loadSnackbars, loadUser, session]);
+  }, [loadSnackbars, loadUser, loadReviews, session]);
 
   /* ----- auth methods ----- */
 
