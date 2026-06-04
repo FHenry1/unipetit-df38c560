@@ -17,12 +17,15 @@ export const Route = createFileRoute("/_app/profile")({
 });
 
 function ProfilePage() {
-  const { user, logout, becomeOwner, snackbars } = useAuth();
+  const { user, logout, becomeOwner, snackbars, reviews } = useAuth();
   const navigate = useNavigate();
   const [loadingOwner, setLoadingOwner] = useState(false);
   if (!user) return null;
 
   const favs = snackbars.filter((s) => user.favorites.includes(s.id));
+  const myReviews = reviews
+    .filter((r) => r.user_id === user.id)
+    .map((r) => ({ ...r, snackbar: snackbars.find((s) => s.id === r.snackbar_id) }));
 
   const onBecomeOwner = async () => {
     if (loadingOwner) return;
