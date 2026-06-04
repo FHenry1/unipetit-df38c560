@@ -304,12 +304,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadSnackbars();
   };
 
+  /* ----- reviews ----- */
+
+  const upsertReview: AuthContextValue["upsertReview"] = async (
+    snackbarId,
+    rating,
+    comment,
+  ) => {
+    if (!user) return { ok: false, error: "Você precisa estar logado" };
+    if (rating < 1 || rating > 5) return { ok: false, error: "Nota inválida" };
+    const trimmed = comment.trim().slice(0, 500);
+    const { error } = await supabase
+      .from("reviews")
+      .upsert(
+        {
+          snackbar_id: snackbarId,
+          user_id: user.id,
+          rating,
+          comment: trimmed,
+        },
+        { onConflict: "snackbar_id,user_id" },
+      );
+    if (error) return { ok: false, error: error.message };
+    await Promise.all([loadReviews(), loadSnackbars()]);
+    return { ok: true };
+  };
+
+  const deleteReview: AuthContextValue["deleteReview"] = async (reviewId) => {
+    await supabase.from("reviews").delete().eq("id", reviewId);
+    await Promise.all([loadReviews(), loadSnackbars()]);
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         loading,
         snackbars,
+        reviews,
         mySnackbar,
         login,
         signup,
@@ -322,6 +354,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateMySnackbar,
         addMenuItem,
         removeMenuItem,
+        upsertReview,
+        deleteReview,
         refresh,
       }}
     >
