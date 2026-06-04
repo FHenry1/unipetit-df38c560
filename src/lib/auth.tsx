@@ -30,6 +30,16 @@ export interface SnackBar {
   menu_items: MenuItem[];
 }
 
+export interface Review {
+  id: string;
+  snackbar_id: string;
+  user_id: string;
+  user_name: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -42,6 +52,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   snackbars: SnackBar[];
+  reviews: Review[];
   mySnackbar: SnackBar | null;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   signup: (
@@ -50,9 +61,7 @@ interface AuthContextValue {
     password: string,
   ) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
-  /** Send a password reset e-mail to the user. */
   requestPasswordReset: (email: string) => Promise<{ ok: boolean; error?: string }>;
-  /** Update the password — only works after the user clicks the recovery link. */
   updatePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>;
   becomeOwner: () => Promise<void>;
   exitOwnerMode: () => Promise<void>;
@@ -60,6 +69,12 @@ interface AuthContextValue {
   updateMySnackbar: (patch: Partial<SnackBar>) => Promise<void>;
   addMenuItem: (item: Omit<MenuItem, "id">) => Promise<void>;
   removeMenuItem: (itemId: string) => Promise<void>;
+  upsertReview: (
+    snackbarId: string,
+    rating: number,
+    comment: string,
+  ) => Promise<{ ok: boolean; error?: string }>;
+  deleteReview: (reviewId: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -72,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [snackbars, setSnackbars] = useState<SnackBar[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadSnackbars = useCallback(async () => {
@@ -99,6 +115,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })),
     }));
     setSnackbars(list);
+  }, []);
+
+  const loadReviews = useCallback(async () => {
+    const { data } = await supabase
+      .from("reviews")
+      .select("id, snackbar_id, user_id, rating, comment, created_at, profiles(name)")
+      .order("created_at", { ascending: false });
+    const list: Review[] = (data ?? []).map((r: any) => ({
+      id: r.id,
+      snackbar_id: r.snackbar_id,
+      user_id: r.user_id,
+      user_name: r.profiles?.name?.trim() || "Usuário",
+      rating: Number(r.rating),
+      comment: r.comment ?? "",
+      created_at: r.created_at,
+    }));
+    setReviews(list);
   }, []);
 
   const loadUser = useCallback(async (currentSession: Session | null) => {
@@ -135,13 +168,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      Promise.all([loadUser(data.session), loadSnackbars()]).finally(() =>
+      Promise.all([loadUser(data.session), loadSnackbars(), loadReviews()]).finally(() =>
         setLoading(false),
       );
     });
 
     return () => sub.subscription.unsubscribe();
-  }, [loadUser, loadSnackbars]);
+  }, [loadUser, loadSnackbars, loadReviews]);
 
   const mySnackbar =
     user && user.role === "owner"
@@ -149,8 +182,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : null;
 
   const refresh = useCallback(async () => {
-    await Promise.all([loadUser(session), loadSnackbars()]);
-  }, [loadSnackbars, loadUser, session]);
+    await Promise.all([loadUser(session), loadSnackbars(), loadReviews()]);
+  }, [loadSnackbars, loadUser, loadReviews, session]);
 
   /* ----- auth methods ----- */
 
@@ -271,12 +304,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadSnackbars();
   };
 
+  /* ----- reviews ----- */
+
+  const upsertReview: AuthContextValue["upsertReview"] = async (
+    snackbarId,
+    rating,
+    comment,
+  ) => {
+    if (!user) return { ok: false, error: "Você precisa estar logado" };
+    if (rating < 1 || rating > 5) return { ok: false, error: "Nota inválida" };
+    const trimmed = comment.trim().slice(0, 500);
+    const { error } = await supabase
+      .from("reviews")
+      .upsert(
+        {
+          snackbar_id: snackbarId,
+          user_id: user.id,
+          rating,
+          comment: trimmed,
+        },
+        { onConflict: "snackbar_id,user_id" },
+      );
+    if (error) return { ok: false, error: error.message };
+    await Promise.all([loadReviews(), loadSnackbars()]);
+    return { ok: true };
+  };
+
+  const deleteReview: AuthContextValue["deleteReview"] = async (reviewId) => {
+    await supabase.from("reviews").delete().eq("id", reviewId);
+    await Promise.all([loadReviews(), loadSnackbars()]);
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         loading,
         snackbars,
+        reviews,
         mySnackbar,
         login,
         signup,
@@ -289,6 +354,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateMySnackbar,
         addMenuItem,
         removeMenuItem,
+        upsertReview,
+        deleteReview,
         refresh,
       }}
     >
