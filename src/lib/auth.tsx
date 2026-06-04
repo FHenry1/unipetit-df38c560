@@ -117,6 +117,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSnackbars(list);
   }, []);
 
+  const loadReviews = useCallback(async () => {
+    const { data } = await supabase
+      .from("reviews")
+      .select("id, snackbar_id, user_id, rating, comment, created_at, profiles(name)")
+      .order("created_at", { ascending: false });
+    const list: Review[] = (data ?? []).map((r: any) => ({
+      id: r.id,
+      snackbar_id: r.snackbar_id,
+      user_id: r.user_id,
+      user_name: r.profiles?.name?.trim() || "Usuário",
+      rating: Number(r.rating),
+      comment: r.comment ?? "",
+      created_at: r.created_at,
+    }));
+    setReviews(list);
+  }, []);
+
   const loadUser = useCallback(async (currentSession: Session | null) => {
     if (!currentSession) {
       setUser(null);
