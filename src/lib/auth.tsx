@@ -77,7 +77,6 @@ interface AuthContextValue {
   deleteReview: (reviewId: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
-}
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
