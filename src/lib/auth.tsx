@@ -52,6 +52,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   snackbars: SnackBar[];
+  reviews: Review[];
   mySnackbar: SnackBar | null;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   signup: (
@@ -60,9 +61,7 @@ interface AuthContextValue {
     password: string,
   ) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
-  /** Send a password reset e-mail to the user. */
   requestPasswordReset: (email: string) => Promise<{ ok: boolean; error?: string }>;
-  /** Update the password — only works after the user clicks the recovery link. */
   updatePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>;
   becomeOwner: () => Promise<void>;
   exitOwnerMode: () => Promise<void>;
@@ -70,7 +69,14 @@ interface AuthContextValue {
   updateMySnackbar: (patch: Partial<SnackBar>) => Promise<void>;
   addMenuItem: (item: Omit<MenuItem, "id">) => Promise<void>;
   removeMenuItem: (itemId: string) => Promise<void>;
+  upsertReview: (
+    snackbarId: string,
+    rating: number,
+    comment: string,
+  ) => Promise<{ ok: boolean; error?: string }>;
+  deleteReview: (reviewId: string) => Promise<void>;
   refresh: () => Promise<void>;
+}
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
