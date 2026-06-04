@@ -75,14 +75,76 @@ function ProfilePage() {
           />
         </section>
 
-        {/* Menu list */}
-        <section className="mt-5 overflow-hidden rounded-2xl bg-surface text-surface-foreground shadow-card">
-          <Row
-            icon={<Heart size={16} />}
-            label="Meus favoritos"
-            hint={`${favs.length}`}
+        {/* Favoritos */}
+        <section className="mt-6">
+          <SectionHeader
+            icon={<Heart size={14} className="text-rose-500" />}
+            title="Meus favoritos"
+            count={favs.length}
           />
-          <Row icon={<Star size={16} />} label="Histórico de avaliações" />
+          {favs.length === 0 ? (
+            <EmptyState
+              icon={<Heart size={18} className="text-rose-500" />}
+              title="Nenhum favorito ainda"
+              subtitle="Toque no coração das lanchonetes para salvá-las aqui."
+            />
+          ) : (
+            <ul className="mt-3 space-y-3">
+              {favs.map((s) => (
+                <li key={s.id}>
+                  <Link
+                    to="/snackbar/$id"
+                    params={{ id: s.id }}
+                    className="flex items-center gap-3 rounded-2xl bg-surface p-3 text-surface-foreground shadow-card transition active:scale-[0.99]"
+                  >
+                    <div
+                      className="h-16 w-16 shrink-0 rounded-xl bg-cover bg-center"
+                      style={{ backgroundImage: `url(${s.cover})` }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="truncate text-sm font-semibold">
+                          {s.name}
+                        </h4>
+                        <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold">
+                          <Star size={10} className="fill-current text-amber-500" />
+                          {s.rating.toFixed(1)}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                        {s.location}
+                      </p>
+                      <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground/80">
+                        {s.description}
+                      </p>
+                    </div>
+                    <ChevronRight
+                      size={16}
+                      className="shrink-0 text-muted-foreground"
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Avaliações */}
+        <section className="mt-6">
+          <SectionHeader
+            icon={<Star size={14} className="text-amber-500" />}
+            title="Minhas avaliações"
+            count={0}
+          />
+          <EmptyState
+            icon={<Star size={18} className="text-amber-500" />}
+            title="Você ainda não avaliou"
+            subtitle="Compartilhe sua experiência nas lanchonetes que visitou."
+          />
+        </section>
+
+        {/* Settings */}
+        <section className="mt-6 overflow-hidden rounded-2xl bg-surface text-surface-foreground shadow-card">
           <Row icon={<Settings size={16} />} label="Configurações" />
         </section>
 
