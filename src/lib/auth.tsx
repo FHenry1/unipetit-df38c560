@@ -168,13 +168,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      Promise.all([loadUser(data.session), loadSnackbars()]).finally(() =>
+      Promise.all([loadUser(data.session), loadSnackbars(), loadReviews()]).finally(() =>
         setLoading(false),
       );
     });
 
     return () => sub.subscription.unsubscribe();
-  }, [loadUser, loadSnackbars]);
+  }, [loadUser, loadSnackbars, loadReviews]);
 
   const mySnackbar =
     user && user.role === "owner"
@@ -182,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : null;
 
   const refresh = useCallback(async () => {
-    await Promise.all([loadUser(session), loadSnackbars()]);
+    await Promise.all([loadUser(session), loadSnackbars(), loadReviews()]);
   }, [loadSnackbars, loadUser, session]);
 
   /* ----- auth methods ----- */
