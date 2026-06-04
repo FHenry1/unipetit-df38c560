@@ -102,6 +102,44 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          rating: number
+          snackbar_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string
+          created_at?: string
+          id?: string
+          rating: number
+          snackbar_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          snackbar_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_snackbar_id_fkey"
+            columns: ["snackbar_id"]
+            isOneToOne: false
+            referencedRelation: "snackbars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       snackbars: {
         Row: {
           categories: string[]
