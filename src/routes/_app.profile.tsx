@@ -137,13 +137,61 @@ function ProfilePage() {
           <SectionHeader
             icon={<Star size={14} className="text-amber-500" />}
             title="Minhas avaliações"
-            count={0}
+            count={myReviews.length}
           />
-          <EmptyState
-            icon={<Star size={18} className="text-amber-500" />}
-            title="Você ainda não avaliou"
-            subtitle="Compartilhe sua experiência nas lanchonetes que visitou."
-          />
+          {myReviews.length === 0 ? (
+            <EmptyState
+              icon={<Star size={18} className="text-amber-500" />}
+              title="Você ainda não avaliou"
+              subtitle="Compartilhe sua experiência nas lanchonetes que visitou."
+            />
+          ) : (
+            <ul className="mt-3 space-y-3">
+              {myReviews.map((r) => (
+                <li key={r.id}>
+                  {r.snackbar ? (
+                    <Link
+                      to="/snackbar/$id"
+                      params={{ id: r.snackbar.id }}
+                      className="block rounded-2xl bg-surface p-3 text-surface-foreground shadow-card transition active:scale-[0.99]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="h-12 w-12 shrink-0 rounded-xl bg-cover bg-center"
+                          style={{ backgroundImage: `url(${r.snackbar.cover})` }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="truncate text-sm font-semibold">
+                              {r.snackbar.name}
+                            </h4>
+                            <span className="flex shrink-0 items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <Star
+                                  key={n}
+                                  size={11}
+                                  className={
+                                    n <= r.rating
+                                      ? "fill-amber-400 text-amber-400"
+                                      : "text-muted-foreground/30"
+                                  }
+                                />
+                              ))}
+                            </span>
+                          </div>
+                          {r.comment && (
+                            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                              {r.comment}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         {/* Settings */}
