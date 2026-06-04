@@ -74,7 +74,7 @@ function ProfilePage() {
           <StatCard
             icon={<Star size={16} className="text-amber-500" />}
             label="Avaliações"
-            value={0}
+            value={myReviews.length}
           />
         </section>
 
