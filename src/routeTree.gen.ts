@@ -21,6 +21,9 @@ import { Route as AppOwnerRouteImport } from './routes/_app.owner'
 import { Route as AppMapRouteImport } from './routes/_app.map'
 import { Route as AppHomeRouteImport } from './routes/_app.home'
 import { Route as AppSnackbarIdRouteImport } from './routes/_app.snackbar.$id'
+import { Route as AppOwnerReviewsRouteImport } from './routes/_app.owner.reviews'
+import { Route as AppOwnerOrdersRouteImport } from './routes/_app.owner.orders'
+import { Route as AppOwnerMenuRouteImport } from './routes/_app.owner.menu'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -81,6 +84,21 @@ const AppSnackbarIdRoute = AppSnackbarIdRouteImport.update({
   path: '/snackbar/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOwnerReviewsRoute = AppOwnerReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AppOwnerRoute,
+} as any)
+const AppOwnerOrdersRoute = AppOwnerOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AppOwnerRoute,
+} as any)
+const AppOwnerMenuRoute = AppOwnerMenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
+  getParentRoute: () => AppOwnerRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -90,9 +108,12 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/home': typeof AppHomeRoute
   '/map': typeof AppMapRoute
-  '/owner': typeof AppOwnerRoute
+  '/owner': typeof AppOwnerRouteWithChildren
   '/profile': typeof AppProfileRoute
   '/search': typeof AppSearchRoute
+  '/owner/menu': typeof AppOwnerMenuRoute
+  '/owner/orders': typeof AppOwnerOrdersRoute
+  '/owner/reviews': typeof AppOwnerReviewsRoute
   '/snackbar/$id': typeof AppSnackbarIdRoute
 }
 export interface FileRoutesByTo {
@@ -103,9 +124,12 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/home': typeof AppHomeRoute
   '/map': typeof AppMapRoute
-  '/owner': typeof AppOwnerRoute
+  '/owner': typeof AppOwnerRouteWithChildren
   '/profile': typeof AppProfileRoute
   '/search': typeof AppSearchRoute
+  '/owner/menu': typeof AppOwnerMenuRoute
+  '/owner/orders': typeof AppOwnerOrdersRoute
+  '/owner/reviews': typeof AppOwnerReviewsRoute
   '/snackbar/$id': typeof AppSnackbarIdRoute
 }
 export interface FileRoutesById {
@@ -118,9 +142,12 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_app/home': typeof AppHomeRoute
   '/_app/map': typeof AppMapRoute
-  '/_app/owner': typeof AppOwnerRoute
+  '/_app/owner': typeof AppOwnerRouteWithChildren
   '/_app/profile': typeof AppProfileRoute
   '/_app/search': typeof AppSearchRoute
+  '/_app/owner/menu': typeof AppOwnerMenuRoute
+  '/_app/owner/orders': typeof AppOwnerOrdersRoute
+  '/_app/owner/reviews': typeof AppOwnerReviewsRoute
   '/_app/snackbar/$id': typeof AppSnackbarIdRoute
 }
 export interface FileRouteTypes {
@@ -136,6 +163,9 @@ export interface FileRouteTypes {
     | '/owner'
     | '/profile'
     | '/search'
+    | '/owner/menu'
+    | '/owner/orders'
+    | '/owner/reviews'
     | '/snackbar/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -149,6 +179,9 @@ export interface FileRouteTypes {
     | '/owner'
     | '/profile'
     | '/search'
+    | '/owner/menu'
+    | '/owner/orders'
+    | '/owner/reviews'
     | '/snackbar/$id'
   id:
     | '__root__'
@@ -163,6 +196,9 @@ export interface FileRouteTypes {
     | '/_app/owner'
     | '/_app/profile'
     | '/_app/search'
+    | '/_app/owner/menu'
+    | '/_app/owner/orders'
+    | '/_app/owner/reviews'
     | '/_app/snackbar/$id'
   fileRoutesById: FileRoutesById
 }
@@ -261,13 +297,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSnackbarIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/owner/reviews': {
+      id: '/_app/owner/reviews'
+      path: '/reviews'
+      fullPath: '/owner/reviews'
+      preLoaderRoute: typeof AppOwnerReviewsRouteImport
+      parentRoute: typeof AppOwnerRoute
+    }
+    '/_app/owner/orders': {
+      id: '/_app/owner/orders'
+      path: '/orders'
+      fullPath: '/owner/orders'
+      preLoaderRoute: typeof AppOwnerOrdersRouteImport
+      parentRoute: typeof AppOwnerRoute
+    }
+    '/_app/owner/menu': {
+      id: '/_app/owner/menu'
+      path: '/menu'
+      fullPath: '/owner/menu'
+      preLoaderRoute: typeof AppOwnerMenuRouteImport
+      parentRoute: typeof AppOwnerRoute
+    }
   }
 }
+
+interface AppOwnerRouteChildren {
+  AppOwnerMenuRoute: typeof AppOwnerMenuRoute
+  AppOwnerOrdersRoute: typeof AppOwnerOrdersRoute
+  AppOwnerReviewsRoute: typeof AppOwnerReviewsRoute
+}
+
+const AppOwnerRouteChildren: AppOwnerRouteChildren = {
+  AppOwnerMenuRoute: AppOwnerMenuRoute,
+  AppOwnerOrdersRoute: AppOwnerOrdersRoute,
+  AppOwnerReviewsRoute: AppOwnerReviewsRoute,
+}
+
+const AppOwnerRouteWithChildren = AppOwnerRoute._addFileChildren(
+  AppOwnerRouteChildren,
+)
 
 interface AppRouteChildren {
   AppHomeRoute: typeof AppHomeRoute
   AppMapRoute: typeof AppMapRoute
-  AppOwnerRoute: typeof AppOwnerRoute
+  AppOwnerRoute: typeof AppOwnerRouteWithChildren
   AppProfileRoute: typeof AppProfileRoute
   AppSearchRoute: typeof AppSearchRoute
   AppSnackbarIdRoute: typeof AppSnackbarIdRoute
@@ -276,7 +349,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppHomeRoute: AppHomeRoute,
   AppMapRoute: AppMapRoute,
-  AppOwnerRoute: AppOwnerRoute,
+  AppOwnerRoute: AppOwnerRouteWithChildren,
   AppProfileRoute: AppProfileRoute,
   AppSearchRoute: AppSearchRoute,
   AppSnackbarIdRoute: AppSnackbarIdRoute,
