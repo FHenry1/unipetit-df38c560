@@ -40,6 +40,18 @@ export interface Review {
   created_at: string;
 }
 
+export type OrderStatus = "pending" | "preparing" | "ready" | "delivered" | "cancelled";
+
+export interface Order {
+  id: string;
+  snackbar_id: string;
+  customer_name: string;
+  total: number;
+  status: OrderStatus;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -53,6 +65,8 @@ interface AuthContextValue {
   loading: boolean;
   snackbars: SnackBar[];
   reviews: Review[];
+  orders: Order[];
+  updateOrderStatus: (id: string, status: OrderStatus) => Promise<void>;
   mySnackbar: SnackBar | null;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   signup: (
@@ -88,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [snackbars, setSnackbars] = useState<SnackBar[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadSnackbars = useCallback(async () => {
@@ -134,6 +149,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setReviews(list);
   }, []);
 
+  const loadOrders = useCallback(async (uid: string | null) => {
+    if (!uid) {
+      setOrders([]);
+      return;
+    }
+    const { data } = await supabase
+      .from("orders")
+      .select("id, snackbar_id, customer_name, total, status, notes, created_at")
+      .order("created_at", { ascending: false });
+    setOrders(
+      (data ?? []).map((o: any) => ({
+        id: o.id,
+        snackbar_id: o.snackbar_id,
+        customer_name: o.customer_name,
+        total: Number(o.total),
+        status: o.status as OrderStatus,
+        notes: o.notes,
+        created_at: o.created_at,
+      })),
+    );
+  }, []);
+
   const loadUser = useCallback(async (currentSession: Session | null) => {
     if (!currentSession) {
       setUser(null);
@@ -168,13 +205,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      Promise.all([loadUser(data.session), loadSnackbars(), loadReviews()]).finally(() =>
-        setLoading(false),
-      );
+      Promise.all([
+        loadUser(data.session),
+        loadSnackbars(),
+        loadReviews(),
+        loadOrders(data.session?.user.id ?? null),
+      ]).finally(() => setLoading(false));
     });
 
     return () => sub.subscription.unsubscribe();
-  }, [loadUser, loadSnackbars, loadReviews]);
+  }, [loadUser, loadSnackbars, loadReviews, loadOrders]);
 
   const mySnackbar =
     user && user.role === "owner"
@@ -182,8 +222,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : null;
 
   const refresh = useCallback(async () => {
-    await Promise.all([loadUser(session), loadSnackbars(), loadReviews()]);
-  }, [loadSnackbars, loadUser, loadReviews, session]);
+    await Promise.all([
+      loadUser(session),
+      loadSnackbars(),
+      loadReviews(),
+      loadOrders(session?.user.id ?? null),
+    ]);
+  }, [loadSnackbars, loadUser, loadReviews, loadOrders, session]);
 
   /* ----- auth methods ----- */
 
@@ -335,6 +380,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await Promise.all([loadReviews(), loadSnackbars()]);
   };
 
+  const updateOrderStatus: AuthContextValue["updateOrderStatus"] = async (id, status) => {
+    await supabase.from("orders").update({ status }).eq("id", id);
+    await loadOrders(user?.id ?? null);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -342,6 +392,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         snackbars,
         reviews,
+        orders,
+        updateOrderStatus,
         mySnackbar,
         login,
         signup,
