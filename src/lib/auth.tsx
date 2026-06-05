@@ -40,6 +40,18 @@ export interface Review {
   created_at: string;
 }
 
+export type OrderStatus = "pending" | "preparing" | "ready" | "delivered" | "cancelled";
+
+export interface Order {
+  id: string;
+  snackbar_id: string;
+  customer_name: string;
+  total: number;
+  status: OrderStatus;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -53,6 +65,8 @@ interface AuthContextValue {
   loading: boolean;
   snackbars: SnackBar[];
   reviews: Review[];
+  orders: Order[];
+  updateOrderStatus: (id: string, status: OrderStatus) => Promise<void>;
   mySnackbar: SnackBar | null;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   signup: (
