@@ -4,7 +4,7 @@ import { OwnerHeader } from "@/components/OwnerHeader";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/owner/reviews")({
-  component: OwnerReviews;
+  component: OwnerReviews,
 });
 
 function OwnerReviews() {
