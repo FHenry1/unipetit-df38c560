@@ -1,205 +1,174 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Eye, LogOut, MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { LogOut, TrendingUp, Receipt, Eye, Star, ArrowRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { OwnerHeader } from "@/components/OwnerHeader";
 
 export const Route = createFileRoute("/_app/owner")({
   component: OwnerDashboard,
 });
 
 function OwnerDashboard() {
-  const { user, mySnackbar, logout, updateMySnackbar, addMenuItem, removeMenuItem, exitOwnerMode } =
-    useAuth();
+  const { user, mySnackbar, orders, reviews, logout } = useAuth();
   const navigate = useNavigate();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(() => mySnackbar);
-  const [adding, setAdding] = useState(false);
-  const [newItem, setNewItem] = useState({ name: "", description: "", price: "" });
-
-  if (!user || user.role !== "user" && !mySnackbar) {
-    // Not an owner — bounce
-  }
 
   if (!mySnackbar) {
     return (
-      <div className="px-5 pt-8 text-sm text-muted-foreground">
-        Você ainda não é dono. <Link to="/profile" className="text-brand">Tornar-se dono</Link>
+      <div className="px-5 pt-10 text-sm text-neutral-400">
+        Você ainda não é dono.{" "}
+        <Link to="/profile" className="text-[#e85d75] underline">
+          Tornar-se dono
+        </Link>
       </div>
     );
   }
 
-  const onSave = () => {
-    if (draft) updateMySnackbar(draft);
-    setEditing(false);
-  };
+  const myOrders = orders.filter((o) => o.snackbar_id === mySnackbar.id);
+  const myReviews = reviews.filter((r) => r.snackbar_id === mySnackbar.id);
 
-  const onAdd = () => {
-    if (!newItem.name) return;
-    addMenuItem({
-      name: newItem.name,
-      description: newItem.description,
-      price: parseFloat(newItem.price) || 0,
-    });
-    setNewItem({ name: "", description: "", price: "" });
-    setAdding(false);
-  };
+  const today = new Date().toDateString();
+  const todayOrders = myOrders.filter(
+    (o) => new Date(o.created_at).toDateString() === today,
+  );
+  const salesToday = todayOrders
+    .filter((o) => o.status !== "cancelled")
+    .reduce((a, o) => a + o.total, 0);
+  const pendingCount = myOrders.filter((o) => o.status === "pending").length;
+
+  // Last 7 days sales sparkline
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return d.toDateString();
+  });
+  const series = days.map((day) =>
+    myOrders
+      .filter(
+        (o) =>
+          new Date(o.created_at).toDateString() === day && o.status !== "cancelled",
+      )
+      .reduce((a, o) => a + o.total, 0),
+  );
+  const maxVal = Math.max(...series, 1);
 
   return (
-    <div className="px-5 pt-8 pb-4">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-wider text-brand">Painel do dono</p>
-          <h1 className="text-xl font-bold">{mySnackbar.name}</h1>
-        </div>
-        <button
-          onClick={() => {
-            logout();
-            navigate({ to: "/" });
-          }}
-          className="grid h-10 w-10 place-items-center rounded-full bg-surface text-surface-foreground shadow-card"
-          aria-label="Sair"
-        >
-          <LogOut size={16} />
-        </button>
-      </header>
-
-      <section className="mt-5 grid grid-cols-2 gap-3">
-        <Metric icon={<MessageSquare size={16} />} value="12" label="Avaliações" />
-        <Metric icon={<Eye size={16} />} value="324" label="Visualizações" />
-      </section>
-
-      <section className="mt-6 rounded-2xl bg-surface p-4 text-surface-foreground shadow-card">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Informações da lanchonete</h2>
+    <div className="pb-6">
+      <OwnerHeader
+        title={mySnackbar.name}
+        subtitle="Painel do dono"
+        right={
           <button
-            onClick={() => {
-              setDraft(mySnackbar);
-              setEditing((v) => !v);
+            onClick={async () => {
+              await logout();
+              navigate({ to: "/" });
             }}
-            className="flex items-center gap-1 text-xs font-semibold text-brand"
+            className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"
+            aria-label="Sair"
           >
-            <Pencil size={12} /> {editing ? "Cancelar" : "Editar"}
+            <LogOut size={16} />
           </button>
+        }
+      />
+
+      <div className="px-5 -mt-6 space-y-4">
+        <div className="rounded-2xl bg-gradient-to-br from-[#5d0a1a] to-[#3a0612] p-5 text-white shadow-[0_20px_50px_-20px_rgba(93,10,26,0.8)]">
+          <p className="text-xs uppercase tracking-[0.2em] text-white/60">
+            Vendas hoje
+          </p>
+          <div className="mt-2 flex items-end justify-between">
+            <p className="text-3xl font-extrabold">
+              R$ {salesToday.toFixed(2).replace(".", ",")}
+            </p>
+            <TrendingUp className="text-[#e85d75]" size={22} />
+          </div>
+          <p className="mt-1 text-xs text-white/70">
+            {todayOrders.length} pedido(s) recebidos
+          </p>
         </div>
 
-        {!editing ? (
-          <dl className="mt-3 space-y-2 text-sm">
-            <Field label="Nome" value={mySnackbar.name} />
-            <Field label="Descrição" value={mySnackbar.description} />
-            <Field label="Endereço" value={mySnackbar.location} />
-          </dl>
-        ) : (
-          <div className="mt-3 space-y-3 text-sm">
-            <Input
-              label="Nome"
-              value={draft?.name ?? ""}
-              onChange={(v) => setDraft((d) => d && { ...d, name: v })}
-            />
-            <Input
-              label="Descrição"
-              value={draft?.description ?? ""}
-              onChange={(v) => setDraft((d) => d && { ...d, description: v })}
-            />
-            <Input
-              label="Endereço"
-              value={draft?.location ?? ""}
-              onChange={(v) => setDraft((d) => d && { ...d, location: v })}
-            />
-            <button
-              onClick={onSave}
-              className="w-full rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow"
-            >
-              Salvar alterações
-            </button>
-          </div>
-        )}
-      </section>
-
-      <section className="mt-6 rounded-2xl bg-surface p-4 text-surface-foreground shadow-card">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Menu ({mySnackbar.menu_items.length})</h2>
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1 rounded-full bg-brand px-3 py-1 text-xs font-semibold text-primary-foreground"
-          >
-            <Plus size={12} /> Adicionar
-          </button>
+        <div className="grid grid-cols-2 gap-3">
+          <Metric
+            icon={<Receipt size={16} />}
+            value={String(pendingCount)}
+            label="Pedidos pendentes"
+            accent
+          />
+          <Metric
+            icon={<Star size={16} />}
+            value={mySnackbar.rating ? mySnackbar.rating.toFixed(1) : "—"}
+            label="Avaliação média"
+          />
+          <Metric
+            icon={<Eye size={16} />}
+            value={String(myReviews.length)}
+            label="Avaliações"
+          />
+          <Metric
+            icon={<Receipt size={16} />}
+            value={String(myOrders.length)}
+            label="Pedidos totais"
+          />
         </div>
 
-        <ul className="mt-3 space-y-2">
-          {mySnackbar.menu_items.length === 0 && (
-            <li className="text-xs text-muted-foreground">Nenhum item ainda.</li>
-          )}
-          {mySnackbar.menu_items.map((m) => (
-            <li
-              key={m.id}
-              className="flex items-start justify-between gap-3 rounded-xl border border-border p-3"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-semibold">{m.name}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {m.description}
-                </p>
-                <p className="mt-1 text-xs font-bold text-brand">
-                  R$ {m.price.toFixed(2)}
-                </p>
-              </div>
-              <button
-                onClick={() => removeMenuItem(m.id)}
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-destructive/10 text-destructive"
-              >
-                <Trash2 size={14} />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <Link
-        to="/snackbar/$id"
-        params={{ id: mySnackbar.id }}
-        className="mt-6 block rounded-xl border border-border py-3 text-center text-sm font-semibold"
-      >
-        Ver página pública
-      </Link>
-
-      <button
-        onClick={() => {
-          exitOwnerMode();
-          navigate({ to: "/home" });
-        }}
-        className="mt-3 w-full rounded-xl border border-border bg-surface py-3 text-center text-sm font-semibold text-surface-foreground"
-      >
-        Sair do modo Proprietário
-      </button>
-
-      {adding && (
-        <Modal onClose={() => setAdding(false)} title="Novo item do menu">
-          <div className="space-y-3">
-            <Input
-              label="Nome"
-              value={newItem.name}
-              onChange={(v) => setNewItem({ ...newItem, name: v })}
-            />
-            <Input
-              label="Descrição"
-              value={newItem.description}
-              onChange={(v) => setNewItem({ ...newItem, description: v })}
-            />
-            <Input
-              label="Preço (R$)"
-              value={newItem.price}
-              onChange={(v) => setNewItem({ ...newItem, price: v })}
-            />
-            <button
-              onClick={onAdd}
-              className="w-full rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow"
-            >
-              Adicionar ao menu
-            </button>
+        {/* Sparkline */}
+        <div className="rounded-2xl bg-neutral-900 p-5 border border-neutral-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-white">Vendas (7 dias)</h3>
+              <p className="text-[11px] text-neutral-500">Total por dia</p>
+            </div>
+            <span className="text-xs font-semibold text-[#e85d75]">
+              R$ {series.reduce((a, b) => a + b, 0).toFixed(2).replace(".", ",")}
+            </span>
           </div>
-        </Modal>
-      )}
+          <svg viewBox="0 0 280 80" className="mt-4 h-20 w-full">
+            <defs>
+              <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#e85d75" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#5d0a1a" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {(() => {
+              const pts = series.map((v, i) => {
+                const x = (i / 6) * 280;
+                const y = 70 - (v / maxVal) * 60;
+                return [x, y] as const;
+              });
+              const line = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x},${y}`).join(" ");
+              const area = `${line} L280,80 L0,80 Z`;
+              return (
+                <>
+                  <path d={area} fill="url(#g)" />
+                  <path d={line} fill="none" stroke="#e85d75" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  {pts.map(([x, y], i) => (
+                    <circle key={i} cx={x} cy={y} r="3" fill="#5d0a1a" stroke="#e85d75" strokeWidth="1.5" />
+                  ))}
+                </>
+              );
+            })()}
+          </svg>
+        </div>
+
+        <Link
+          to="/owner/orders"
+          className="flex items-center justify-between rounded-2xl bg-neutral-900 border border-neutral-800 p-4 hover:border-[#5d0a1a] transition"
+        >
+          <div>
+            <p className="text-sm font-semibold text-white">Gerenciar pedidos</p>
+            <p className="text-xs text-neutral-500">
+              {pendingCount} aguardando atendimento
+            </p>
+          </div>
+          <ArrowRight size={18} className="text-[#e85d75]" />
+        </Link>
+
+        <Link
+          to="/snackbar/$id"
+          params={{ id: mySnackbar.id }}
+          className="block rounded-xl border border-neutral-800 py-3 text-center text-sm font-semibold text-neutral-300 hover:bg-neutral-900"
+        >
+          Ver página pública
+        </Link>
+      </div>
     </div>
   );
 }
@@ -208,82 +177,26 @@ function Metric({
   icon,
   value,
   label,
+  accent,
 }: {
   icon: React.ReactNode;
   value: string;
   label: string;
-}) {
-  return (
-    <div className="rounded-2xl bg-surface p-4 text-surface-foreground shadow-card">
-      <div className="flex items-center justify-between text-brand">
-        {icon}
-        <span className="text-2xl font-extrabold text-surface-foreground">
-          {value}
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid grid-cols-[90px_1fr] gap-2">
-      <dt className="text-xs uppercase tracking-wider text-muted-foreground">
-        {label}
-      </dt>
-      <dd>{value}</dd>
-    </div>
-  );
-}
-
-function Input({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-border bg-input/40 px-3 py-2 text-sm text-surface-foreground focus:border-primary focus:outline-none"
-      />
-    </label>
-  );
-}
-
-function Modal({
-  title,
-  onClose,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
+  accent?: boolean;
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-end bg-black/50 p-0 sm:place-items-center sm:p-6"
-      onClick={onClose}
+      className={`rounded-2xl p-4 border ${
+        accent
+          ? "bg-[#5d0a1a]/30 border-[#5d0a1a]"
+          : "bg-neutral-900 border-neutral-800"
+      }`}
     >
-      <div
-        className="w-full max-w-md rounded-t-3xl bg-surface p-5 text-surface-foreground shadow-card sm:rounded-3xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <button onClick={onClose} className="text-xs text-muted-foreground">
-            Fechar
-          </button>
-        </div>
-        {children}
+      <div className="flex items-center justify-between text-[#e85d75]">
+        {icon}
+        <span className="text-2xl font-extrabold text-white">{value}</span>
       </div>
+      <p className="mt-1 text-xs text-neutral-400">{label}</p>
     </div>
   );
 }
