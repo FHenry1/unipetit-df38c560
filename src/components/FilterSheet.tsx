@@ -211,8 +211,7 @@ export function FilterSheet({
           <div className="pt-2 space-y-2">
             <button
               onClick={() => onApply(f)}
-              className="w-full rounded-2xl bg-[color:var(--accent)] py-3.5 text-sm font-extrabold text-primary-foreground shadow-glow transition active:scale-[0.98]"
-              style={{ background: "linear-gradient(135deg,#f97316,#ea580c)" }}
+              className="w-full rounded-2xl bg-[#5d0a1a] py-3.5 text-sm font-extrabold text-white shadow-[0_10px_28px_-12px_rgba(93,10,26,0.7)] transition active:scale-[0.98] hover:bg-[#6e0e22]"
             >
               Aplicar Filtros
             </button>

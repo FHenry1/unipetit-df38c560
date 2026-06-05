@@ -16,15 +16,25 @@ export function BottomNav() {
         {items.map(({ to, label, icon: Icon }) => {
           const active = pathname === to;
           return (
-            <li key={to}>
+            <li key={to} className="flex justify-center">
               <Link
                 to={to}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${
-                  active ? "text-brand" : "text-muted-foreground"
+                className={`flex w-full flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition ${
+                  active ? "text-white" : "text-muted-foreground"
                 }`}
               >
-                <Icon size={20} strokeWidth={active ? 2.5 : 2} />
-                {label}
+                <span
+                  className={`grid h-9 w-9 place-items-center rounded-xl transition ${
+                    active
+                      ? "bg-black text-white shadow-[0_6px_16px_-6px_rgba(0,0,0,0.5)]"
+                      : ""
+                  }`}
+                >
+                  <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+                </span>
+                <span className={active ? "text-surface-foreground font-semibold" : ""}>
+                  {label}
+                </span>
               </Link>
             </li>
           );
