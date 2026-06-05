@@ -222,8 +222,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : null;
 
   const refresh = useCallback(async () => {
-    await Promise.all([loadUser(session), loadSnackbars(), loadReviews()]);
-  }, [loadSnackbars, loadUser, loadReviews, session]);
+    await Promise.all([
+      loadUser(session),
+      loadSnackbars(),
+      loadReviews(),
+      loadOrders(session?.user.id ?? null),
+    ]);
+  }, [loadSnackbars, loadUser, loadReviews, loadOrders, session]);
 
   /* ----- auth methods ----- */
 
@@ -375,6 +380,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await Promise.all([loadReviews(), loadSnackbars()]);
   };
 
+  const updateOrderStatus: AuthContextValue["updateOrderStatus"] = async (id, status) => {
+    await supabase.from("orders").update({ status }).eq("id", id);
+    await loadOrders(user?.id ?? null);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -382,6 +392,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         snackbars,
         reviews,
+        orders,
+        updateOrderStatus,
         mySnackbar,
         login,
         signup,
