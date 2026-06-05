@@ -149,6 +149,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setReviews(list);
   }, []);
 
+  const loadOrders = useCallback(async (uid: string | null) => {
+    if (!uid) {
+      setOrders([]);
+      return;
+    }
+    const { data } = await supabase
+      .from("orders")
+      .select("id, snackbar_id, customer_name, total, status, notes, created_at")
+      .order("created_at", { ascending: false });
+    setOrders(
+      (data ?? []).map((o: any) => ({
+        id: o.id,
+        snackbar_id: o.snackbar_id,
+        customer_name: o.customer_name,
+        total: Number(o.total),
+        status: o.status as OrderStatus,
+        notes: o.notes,
+        created_at: o.created_at,
+      })),
+    );
+  }, []);
+
   const loadUser = useCallback(async (currentSession: Session | null) => {
     if (!currentSession) {
       setUser(null);
@@ -183,13 +205,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      Promise.all([loadUser(data.session), loadSnackbars(), loadReviews()]).finally(() =>
-        setLoading(false),
-      );
+      Promise.all([
+        loadUser(data.session),
+        loadSnackbars(),
+        loadReviews(),
+        loadOrders(data.session?.user.id ?? null),
+      ]).finally(() => setLoading(false));
     });
 
     return () => sub.subscription.unsubscribe();
-  }, [loadUser, loadSnackbars, loadReviews]);
+  }, [loadUser, loadSnackbars, loadReviews, loadOrders]);
 
   const mySnackbar =
     user && user.role === "owner"
