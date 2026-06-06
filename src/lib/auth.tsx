@@ -457,10 +457,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         deleteReview,
         replyToReview,
         markOwnerReviewsSeen,
-
-        deleteReview,
         refresh,
       }}
+
     >
       {children}
     </AuthContext.Provider>
