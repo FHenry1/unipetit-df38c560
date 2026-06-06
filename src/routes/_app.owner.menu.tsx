@@ -1,19 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { OwnerHeader } from "@/components/OwnerHeader";
-import { useAuth } from "@/lib/auth";
+import { useAuth, type MenuItem } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/owner/menu")({
   component: OwnerMenu,
 });
 
 function OwnerMenu() {
-  const { mySnackbar, updateMySnackbar, addMenuItem, removeMenuItem } = useAuth();
+  const {
+    mySnackbar,
+    updateMySnackbar,
+    addMenuItem,
+    removeMenuItem,
+    updateMenuItem,
+  } = useAuth();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(mySnackbar);
   const [adding, setAdding] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", description: "", price: "" });
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [itemDraft, setItemDraft] = useState({ name: "", description: "", price: "" });
+  const [saving, setSaving] = useState(false);
 
   if (!mySnackbar) {
     return (
@@ -22,6 +31,27 @@ function OwnerMenu() {
       </div>
     );
   }
+
+  const startEditingItem = (m: MenuItem) => {
+    setEditingItemId(m.id);
+    setItemDraft({
+      name: m.name,
+      description: m.description ?? "",
+      price: m.price.toFixed(2).replace(".", ","),
+    });
+  };
+
+  const saveItem = async () => {
+    if (!editingItemId || !itemDraft.name.trim()) return;
+    setSaving(true);
+    await updateMenuItem(editingItemId, {
+      name: itemDraft.name.trim(),
+      description: itemDraft.description.trim(),
+      price: parseFloat(itemDraft.price.replace(",", ".")) || 0,
+    });
+    setSaving(false);
+    setEditingItemId(null);
+  };
 
   return (
     <div className="pb-6">
@@ -68,8 +98,8 @@ function OwnerMenu() {
                 onChange={(v) => setDraft((d) => d && { ...d, location: v })}
               />
               <button
-                onClick={() => {
-                  if (draft) updateMySnackbar(draft);
+                onClick={async () => {
+                  if (draft) await updateMySnackbar(draft);
                   setEditing(false);
                 }}
                 className="w-full rounded-xl bg-[#5d0a1a] px-4 py-2.5 text-sm font-semibold text-white"
@@ -99,29 +129,80 @@ function OwnerMenu() {
                 Nenhum item ainda. Comece adicionando o primeiro.
               </li>
             )}
-            {mySnackbar.menu_items.map((m) => (
-              <li
-                key={m.id}
-                className="flex items-start justify-between gap-3 rounded-xl bg-neutral-950 border border-neutral-800 p-3"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-white">{m.name}</p>
-                  {m.description && (
-                    <p className="truncate text-xs text-neutral-400">{m.description}</p>
-                  )}
-                  <p className="mt-1 text-xs font-bold text-[#e85d75]">
-                    R$ {m.price.toFixed(2).replace(".", ",")}
-                  </p>
-                </div>
-                <button
-                  onClick={() => removeMenuItem(m.id)}
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
-                  aria-label="Remover"
+            {mySnackbar.menu_items.map((m) =>
+              editingItemId === m.id ? (
+                <li
+                  key={m.id}
+                  className="rounded-xl bg-neutral-950 border border-[#5d0a1a] p-3 space-y-2"
                 >
-                  <Trash2 size={14} />
-                </button>
-              </li>
-            ))}
+                  <Input
+                    label="Nome"
+                    value={itemDraft.name}
+                    onChange={(v) => setItemDraft({ ...itemDraft, name: v })}
+                  />
+                  <Input
+                    label="Descrição"
+                    value={itemDraft.description}
+                    onChange={(v) => setItemDraft({ ...itemDraft, description: v })}
+                  />
+                  <Input
+                    label="Preço (R$)"
+                    value={itemDraft.price}
+                    onChange={(v) => setItemDraft({ ...itemDraft, price: v })}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={saveItem}
+                      disabled={saving || !itemDraft.name.trim()}
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#5d0a1a] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                    >
+                      <Check size={12} /> Salvar
+                    </button>
+                    <button
+                      onClick={() => setEditingItemId(null)}
+                      className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-neutral-700 px-3 py-2 text-xs font-semibold text-neutral-300"
+                    >
+                      <X size={12} /> Cancelar
+                    </button>
+                  </div>
+                </li>
+              ) : (
+                <li
+                  key={m.id}
+                  className="flex items-start justify-between gap-3 rounded-xl bg-neutral-950 border border-neutral-800 p-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-white">{m.name}</p>
+                    {m.description && (
+                      <p className="truncate text-xs text-neutral-400">
+                        {m.description}
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs font-bold text-[#e85d75]">
+                      R$ {m.price.toFixed(2).replace(".", ",")}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <button
+                      onClick={() => startEditingItem(m)}
+                      className="grid h-8 w-8 place-items-center rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                      aria-label="Editar"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Remover "${m.name}"?`)) removeMenuItem(m.id);
+                      }}
+                      className="grid h-8 w-8 place-items-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                      aria-label="Remover"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </li>
+              ),
+            )}
           </ul>
         </section>
       </div>
@@ -161,12 +242,12 @@ function OwnerMenu() {
                 onChange={(v) => setNewItem({ ...newItem, price: v })}
               />
               <button
-                onClick={() => {
-                  if (!newItem.name) return;
-                  addMenuItem({
-                    name: newItem.name,
-                    description: newItem.description,
-                    price: parseFloat(newItem.price) || 0,
+                onClick={async () => {
+                  if (!newItem.name.trim()) return;
+                  await addMenuItem({
+                    name: newItem.name.trim(),
+                    description: newItem.description.trim(),
+                    price: parseFloat(newItem.price.replace(",", ".")) || 0,
                   });
                   setNewItem({ name: "", description: "", price: "" });
                   setAdding(false);

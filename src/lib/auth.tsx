@@ -38,7 +38,11 @@ export interface Review {
   rating: number;
   comment: string;
   created_at: string;
+  owner_reply: string | null;
+  owner_reply_at: string | null;
+  owner_seen: boolean;
 }
+
 
 export type OrderStatus = "pending" | "preparing" | "ready" | "delivered" | "cancelled";
 
@@ -83,13 +87,17 @@ interface AuthContextValue {
   updateMySnackbar: (patch: Partial<SnackBar>) => Promise<void>;
   addMenuItem: (item: Omit<MenuItem, "id">) => Promise<void>;
   removeMenuItem: (itemId: string) => Promise<void>;
+  updateMenuItem: (itemId: string, patch: Partial<Omit<MenuItem, "id">>) => Promise<void>;
   upsertReview: (
     snackbarId: string,
     rating: number,
     comment: string,
   ) => Promise<{ ok: boolean; error?: string }>;
   deleteReview: (reviewId: string) => Promise<void>;
+  replyToReview: (reviewId: string, reply: string) => Promise<void>;
+  markOwnerReviewsSeen: () => Promise<void>;
   refresh: () => Promise<void>;
+
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -135,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadReviews = useCallback(async () => {
     const { data } = await supabase
       .from("reviews")
-      .select("id, snackbar_id, user_id, rating, comment, created_at, profiles(name)")
+      .select("id, snackbar_id, user_id, rating, comment, created_at, owner_reply, owner_reply_at, owner_seen, profiles(name)")
       .order("created_at", { ascending: false });
     const list: Review[] = (data ?? []).map((r: any) => ({
       id: r.id,
@@ -145,9 +153,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       rating: Number(r.rating),
       comment: r.comment ?? "",
       created_at: r.created_at,
+      owner_reply: r.owner_reply ?? null,
+      owner_reply_at: r.owner_reply_at ?? null,
+      owner_seen: !!r.owner_seen,
     }));
     setReviews(list);
   }, []);
+
 
   const loadOrders = useCallback(async (uid: string | null) => {
     if (!uid) {
@@ -349,6 +361,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadSnackbars();
   };
 
+  const updateMenuItem: AuthContextValue["updateMenuItem"] = async (itemId, patch) => {
+    await supabase.from("menu_items").update(patch).eq("id", itemId);
+    await loadSnackbars();
+  };
+
+  const replyToReview: AuthContextValue["replyToReview"] = async (reviewId, reply) => {
+    const trimmed = reply.trim().slice(0, 500);
+    await supabase
+      .from("reviews")
+      .update({
+        owner_reply: trimmed.length ? trimmed : null,
+        owner_reply_at: trimmed.length ? new Date().toISOString() : null,
+      })
+      .eq("id", reviewId);
+    await loadReviews();
+  };
+
+  const markOwnerReviewsSeen: AuthContextValue["markOwnerReviewsSeen"] = async () => {
+    if (!mySnackbar) return;
+    const unseen = reviews.filter(
+      (r) => r.snackbar_id === mySnackbar.id && !r.owner_seen,
+    );
+    if (unseen.length === 0) return;
+    await supabase
+      .from("reviews")
+      .update({ owner_seen: true })
+      .in(
+        "id",
+        unseen.map((r) => r.id),
+      );
+    await loadReviews();
+  };
+
+
   /* ----- reviews ----- */
 
   const upsertReview: AuthContextValue["upsertReview"] = async (
@@ -406,10 +452,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateMySnackbar,
         addMenuItem,
         removeMenuItem,
+        updateMenuItem,
         upsertReview,
         deleteReview,
+        replyToReview,
+        markOwnerReviewsSeen,
         refresh,
       }}
+
     >
       {children}
     </AuthContext.Provider>
