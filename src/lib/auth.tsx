@@ -87,13 +87,17 @@ interface AuthContextValue {
   updateMySnackbar: (patch: Partial<SnackBar>) => Promise<void>;
   addMenuItem: (item: Omit<MenuItem, "id">) => Promise<void>;
   removeMenuItem: (itemId: string) => Promise<void>;
+  updateMenuItem: (itemId: string, patch: Partial<Omit<MenuItem, "id">>) => Promise<void>;
   upsertReview: (
     snackbarId: string,
     rating: number,
     comment: string,
   ) => Promise<{ ok: boolean; error?: string }>;
   deleteReview: (reviewId: string) => Promise<void>;
+  replyToReview: (reviewId: string, reply: string) => Promise<void>;
+  markOwnerReviewsSeen: () => Promise<void>;
   refresh: () => Promise<void>;
+
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
