@@ -38,7 +38,11 @@ export interface Review {
   rating: number;
   comment: string;
   created_at: string;
+  owner_reply: string | null;
+  owner_reply_at: string | null;
+  owner_seen: boolean;
 }
+
 
 export type OrderStatus = "pending" | "preparing" | "ready" | "delivered" | "cancelled";
 
