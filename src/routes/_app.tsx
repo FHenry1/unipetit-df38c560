@@ -9,14 +9,23 @@ export const Route = createFileRoute("/_app")({
 });
 
 function AppShell() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) navigate({ to: "/login" });
-  }, [user, navigate]);
+    if (!loading && !user) navigate({ to: "/login" });
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto grid min-h-screen max-w-md place-items-center bg-neutral-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-700 border-t-[#e85d75]" />
+      </div>
+    );
+  }
 
   if (!user) return null;
+
 
   const isOwner = user.role === "owner";
 
