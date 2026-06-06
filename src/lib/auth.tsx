@@ -452,7 +452,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateMySnackbar,
         addMenuItem,
         removeMenuItem,
+        updateMenuItem,
         upsertReview,
+        deleteReview,
+        replyToReview,
+        markOwnerReviewsSeen,
+
         deleteReview,
         refresh,
       }}
