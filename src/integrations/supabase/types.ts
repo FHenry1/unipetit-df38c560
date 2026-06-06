@@ -183,6 +183,9 @@ export type Database = {
           comment: string
           created_at: string
           id: string
+          owner_reply: string | null
+          owner_reply_at: string | null
+          owner_seen: boolean
           rating: number
           snackbar_id: string
           updated_at: string
@@ -192,6 +195,9 @@ export type Database = {
           comment?: string
           created_at?: string
           id?: string
+          owner_reply?: string | null
+          owner_reply_at?: string | null
+          owner_seen?: boolean
           rating: number
           snackbar_id: string
           updated_at?: string
@@ -201,6 +207,9 @@ export type Database = {
           comment?: string
           created_at?: string
           id?: string
+          owner_reply?: string | null
+          owner_reply_at?: string | null
+          owner_seen?: boolean
           rating?: number
           snackbar_id?: string
           updated_at?: string
