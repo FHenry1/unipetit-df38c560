@@ -361,6 +361,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadSnackbars();
   };
 
+  const updateMenuItem: AuthContextValue["updateMenuItem"] = async (itemId, patch) => {
+    await supabase.from("menu_items").update(patch).eq("id", itemId);
+    await loadSnackbars();
+  };
+
+  const replyToReview: AuthContextValue["replyToReview"] = async (reviewId, reply) => {
+    const trimmed = reply.trim().slice(0, 500);
+    await supabase
+      .from("reviews")
+      .update({
+        owner_reply: trimmed.length ? trimmed : null,
+        owner_reply_at: trimmed.length ? new Date().toISOString() : null,
+      })
+      .eq("id", reviewId);
+    await loadReviews();
+  };
+
+  const markOwnerReviewsSeen: AuthContextValue["markOwnerReviewsSeen"] = async () => {
+    if (!mySnackbar) return;
+    const unseen = reviews.filter(
+      (r) => r.snackbar_id === mySnackbar.id && !r.owner_seen,
+    );
+    if (unseen.length === 0) return;
+    await supabase
+      .from("reviews")
+      .update({ owner_seen: true })
+      .in(
+        "id",
+        unseen.map((r) => r.id),
+      );
+    await loadReviews();
+  };
+
+
   /* ----- reviews ----- */
 
   const upsertReview: AuthContextValue["upsertReview"] = async (
