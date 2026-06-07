@@ -37,9 +37,10 @@ export const Route = createFileRoute("/_app/owner")({
 });
 
 function OwnerDashboard() {
-  const { mySnackbar, orders, reviews, logout } = useAuth();
+  const { mySnackbar, orders, reviews, logout, updateMySnackbar } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const [editing, setEditing] = useState(false);
 
   const myOrders = useMemo(
     () => (mySnackbar ? orders.filter((o) => o.snackbar_id === mySnackbar.id) : []),
