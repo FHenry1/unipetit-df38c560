@@ -146,7 +146,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: m.name,
           description: m.description,
           price: Number(m.price),
-        })),
+          is_active: (m as { is_active?: boolean }).is_active ?? true,
+          position: (m as { position?: number }).position ?? 0,
+        }))
+        .sort((a, b) => a.position - b.position),
+
     }));
     setSnackbars(list);
   }, []);
