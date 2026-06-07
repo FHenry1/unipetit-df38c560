@@ -74,7 +74,7 @@ function ProfilePage() {
     setLoadingOwner(true);
     try {
       await becomeOwner();
-      navigate({ to: "/owner" });
+      navigate({ to: "/owner/profile" });
     } finally {
       setLoadingOwner(false);
     }
