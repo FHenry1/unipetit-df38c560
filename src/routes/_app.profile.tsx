@@ -460,7 +460,7 @@ function ProfileForm({
 function Field({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
   return (
     <label className="block rounded-xl border border-border bg-background px-3 py-2">
-      <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+      <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white">
         {icon} {label}
       </span>
       <div className="mt-0.5">{children}</div>
