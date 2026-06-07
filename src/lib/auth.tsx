@@ -161,13 +161,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadReviews = useCallback(async () => {
     const { data } = await supabase
       .from("reviews")
-      .select("id, snackbar_id, user_id, rating, comment, created_at, owner_reply, owner_reply_at, owner_seen, profiles(name)")
+      .select("id, snackbar_id, user_id, rating, comment, created_at, owner_reply, owner_reply_at, owner_seen")
       .order("created_at", { ascending: false });
-    const list: Review[] = (data ?? []).map((r: any) => ({
+    const rows = data ?? [];
+    const userIds = Array.from(new Set(rows.map((r: any) => r.user_id)));
+    const nameMap = new Map<string, string>();
+    if (userIds.length > 0) {
+      const { data: profs } = await supabase.rpc("get_public_profiles", { _ids: userIds });
+      (profs ?? []).forEach((p: any) => nameMap.set(p.id, (p.name ?? "").trim()));
+    }
+    const list: Review[] = rows.map((r: any) => ({
       id: r.id,
       snackbar_id: r.snackbar_id,
       user_id: r.user_id,
-      user_name: r.profiles?.name?.trim() || "Usuário",
+      user_name: nameMap.get(r.user_id) || "Usuário",
       rating: Number(r.rating),
       comment: r.comment ?? "",
       created_at: r.created_at,
