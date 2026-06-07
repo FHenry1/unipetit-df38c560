@@ -28,15 +28,16 @@ function AppShell() {
 
 
   const isOwner = user.role === "owner";
+  const isAdmin = user.role === "admin";
 
   return (
     <div
-      className={`mx-auto min-h-screen max-w-md pb-20 ${
-        isOwner ? "bg-neutral-950 text-neutral-100" : ""
+      className={`mx-auto min-h-screen max-w-md ${isAdmin ? "" : "pb-20"} ${
+        isOwner || isAdmin ? "bg-neutral-950 text-neutral-100" : ""
       }`}
     >
       <Outlet />
-      {isOwner ? <OwnerBottomNav /> : <BottomNav />}
+      {isAdmin ? null : isOwner ? <OwnerBottomNav /> : <BottomNav />}
     </div>
   );
 }
