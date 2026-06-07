@@ -447,13 +447,13 @@ function ReviewCard({ review }: { review: Review }) {
           {initial}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{review.user_name}</p>
-          <p className="text-[10px] text-muted-foreground">{when}</p>
+          <p className="truncate text-sm font-semibold text-white">{review.user_name}</p>
+          <p className="text-[10px] text-white">{when}</p>
         </div>
         <StarRow rating={review.rating} size={12} />
       </div>
       {review.comment && (
-        <p className="mt-2 text-sm text-surface-foreground">
+        <p className="mt-2 text-sm text-white">
           {shown}{" "}
           {long && (
             <button
