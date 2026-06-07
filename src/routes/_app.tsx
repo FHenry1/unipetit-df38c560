@@ -11,6 +11,7 @@ export const Route = createFileRoute("/_app")({
 function AppShell() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/" });
