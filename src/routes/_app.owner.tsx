@@ -145,12 +145,76 @@ function OwnerDashboard() {
           <p className="mt-1 text-xs text-white/70">{todayOrders.length} pedido(s) recebidos</p>
         </div>
 
-        {/* Resumo */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Resumo — 3 colunas */}
+        <div className="grid grid-cols-3 gap-3">
+          <Metric icon={<Eye size={16} />} value={String(mySnackbar.view_count)} label="Visualizações" />
+          <Metric icon={<Star size={16} />} value={mySnackbar.rating ? mySnackbar.rating.toFixed(1) : "—"} label="Avaliação" />
           <Metric icon={<Receipt size={16} />} value={String(pendingCount)} label="Pendentes" accent />
-          <Metric icon={<Star size={16} />} value={mySnackbar.rating ? mySnackbar.rating.toFixed(1) : "—"} label="Avaliação média" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
           <Metric icon={<DollarSign size={16} />} value={`R$ ${totalWeek.toFixed(0)}`} label="Receita 7 dias" />
-          <Metric icon={<Eye size={16} />} value={String(newReviews)} label="Reviews novas" />
+          <Metric icon={<MessageSquare size={16} />} value={String(newReviews)} label="Reviews novas" />
+        </div>
+
+        {/* Ações rápidas */}
+        <div className="grid grid-cols-2 gap-3">
+          <QuickAction
+            icon={<UtensilsCrossed size={18} />}
+            label="Gerenciar menu"
+            sub={`${mySnackbar.menu_items.length} itens`}
+            onClick={() => navigate({ to: "/owner/menu" })}
+          />
+          <QuickAction
+            icon={<Pencil size={18} />}
+            label="Atualizar informações"
+            sub="Nome, endereço, capa"
+            onClick={() => setEditing(true)}
+          />
+        </div>
+
+        {/* Avaliações recentes */}
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-white">Avaliações recentes</h3>
+              <p className="text-[11px] text-neutral-500">Últimas avaliações dos clientes</p>
+            </div>
+            <Link to="/owner/reviews" className="text-[11px] font-semibold text-[#e85d75] hover:underline">
+              Ver todas
+            </Link>
+          </div>
+          {myReviews.length === 0 ? (
+            <p className="py-4 text-center text-xs text-neutral-500">Nenhuma avaliação ainda.</p>
+          ) : (
+            <ul className="space-y-3">
+              {myReviews
+                .slice()
+                .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
+                .slice(0, 3)
+                .map((r) => (
+                  <li key={r.id} className="rounded-xl border border-neutral-800/60 bg-neutral-950/50 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-xs font-semibold text-neutral-200">{r.user_name}</p>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            size={11}
+                            className={n <= r.rating ? "fill-amber-400 text-amber-400" : "text-neutral-700"}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {r.comment && (
+                      <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-neutral-400">"{r.comment}"</p>
+                    )}
+                    <p className="mt-1.5 text-[10px] text-neutral-600">
+                      {formatDistanceToNow(new Date(r.created_at), { addSuffix: true, locale: ptBR })}
+                    </p>
+                  </li>
+                ))}
+            </ul>
+          )}
         </div>
 
         {/* Sales chart */}
