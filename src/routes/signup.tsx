@@ -36,7 +36,7 @@ function SignupPage() {
       footer={
         <>
           Já tem conta?{" "}
-          <Link to="/login" className="font-semibold text-brand">
+          <Link to="/signup" className="font-semibold text-brand">
             Entrar
           </Link>
         </>
