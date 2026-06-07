@@ -523,6 +523,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         addMenuItem,
         removeMenuItem,
         updateMenuItem,
+        toggleMenuItemActive,
+        reorderMenuItems,
+
         upsertReview,
         deleteReview,
         replyToReview,
