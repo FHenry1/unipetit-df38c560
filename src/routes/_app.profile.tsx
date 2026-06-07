@@ -1,16 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ChevronRight,
+  DoorOpen,
   Heart,
   KeyRound,
   Loader2,
   LogOut,
   Mail,
   MapPin,
+  MessageSquare,
   Phone,
   Receipt,
   RotateCcw,
   Save,
+  Settings as SettingsIcon,
   Sparkles,
   Star,
   Store,
@@ -19,6 +22,8 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
