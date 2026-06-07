@@ -43,7 +43,7 @@ function OwnerProfilePage() {
 
   return (
     <div className="pb-8">
-      <OwnerHeader title={user.name} subtitle="Vendedor" />
+      <OwnerHeader title={user.name} subtitle="Perfil do dono" />
 
       <div className="-mt-6 space-y-5 px-5">
         {/* Card lanchonete */}

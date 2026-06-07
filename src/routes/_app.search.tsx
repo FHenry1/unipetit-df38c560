@@ -16,8 +16,7 @@ export const Route = createFileRoute("/_app/search")({
 });
 
 function SearchPage() {
-  const { snackbars, user, toggleFavorite } = useAuth();
-
+  const { snackbars } = useAuth();
   const [q, setQ] = useState("");
   const [filters, setFilters] = useState<SnackFilters>(EMPTY_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -79,14 +78,8 @@ function SearchPage() {
 
       <div className="mt-3 grid grid-cols-2 gap-3 pb-6">
         {filtered.map((s) => (
-          <SnackBarCard
-            key={s.id}
-            s={s}
-            isFav={!!user?.favorites.includes(s.id)}
-            onFav={toggleFavorite}
-          />
+          <SnackBarCard key={s.id} s={s} />
         ))}
-
         {filtered.length === 0 && (
           <p className="col-span-2 mt-8 text-center text-sm text-white/70">
             Nenhuma lanchonete encontrada com esses filtros.

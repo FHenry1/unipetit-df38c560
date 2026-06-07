@@ -9,7 +9,7 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Role = "user" | "owner" | "admin";
+export type Role = "user" | "owner";
 
 export interface MenuItem {
   id: string;
@@ -18,7 +18,6 @@ export interface MenuItem {
   price: number;
   is_active: boolean;
   position: number;
-  category?: string | null;
 }
 
 
@@ -35,10 +34,7 @@ export interface SnackBar {
   lng: number | null;
   menu_items: MenuItem[];
   view_count: number;
-  opening_time: string | null;
-  closing_time: string | null;
 }
-
 
 export interface Review {
   id: string;
@@ -97,7 +93,7 @@ interface AuthContextValue {
   exitOwnerMode: () => Promise<void>;
   toggleFavorite: (snackbarId: string) => Promise<void>;
   updateMySnackbar: (patch: Partial<SnackBar>) => Promise<void>;
-  addMenuItem: (item: Pick<MenuItem, "name" | "description" | "price"> & { category?: string | null }) => Promise<void>;
+  addMenuItem: (item: Pick<MenuItem, "name" | "description" | "price">) => Promise<void>;
   removeMenuItem: (itemId: string) => Promise<void>;
   updateMenuItem: (itemId: string, patch: Partial<Omit<MenuItem, "id">>) => Promise<void>;
   toggleMenuItemActive: (itemId: string) => Promise<void>;
@@ -156,14 +152,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           price: Number(m.price),
           is_active: (m as { is_active?: boolean }).is_active ?? true,
           position: (m as { position?: number }).position ?? 0,
-          category: (m as { category?: string | null }).category ?? null,
         }))
         .sort((a, b) => a.position - b.position),
       view_count: (s as { view_count?: number }).view_count ?? 0,
-      opening_time: (s as { opening_time?: string | null }).opening_time ?? null,
-      closing_time: (s as { closing_time?: string | null }).closing_time ?? null,
     }));
-
     setSnackbars(list);
   }, []);
 
@@ -228,19 +220,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("user_roles").select("role").eq("user_id", uid),
       supabase.from("favorites").select("snackbar_id").eq("user_id", uid),
     ]);
-    const roleList = (roles ?? []).map((r) => r.role);
-    const isAdmin = roleList.includes("admin");
-    const isOwner = roleList.includes("owner");
+    const isOwner = (roles ?? []).some((r) => r.role === "owner");
     setUser({
       id: uid,
       email: currentSession.user.email ?? "",
       name: profile?.name?.trim() || currentSession.user.email?.split("@")[0] || "Usuário",
       phone: (profile as any)?.phone ?? "",
       address: (profile as any)?.address ?? "",
-      role: isAdmin ? "admin" : isOwner ? "owner" : "user",
+      role: isOwner ? "owner" : "user",
       favorites: (favs ?? []).map((f) => f.snackbar_id),
     });
-
   }, []);
 
   // Initial bootstrap + auth state subscription
@@ -376,8 +365,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       price: item.price,
       is_active: true,
       position: nextPosition,
-      ...(item.category !== undefined ? { category: item.category } : {}),
-    } as any);
+    });
     await loadSnackbars();
   };
 
@@ -387,10 +375,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateMenuItem: AuthContextValue["updateMenuItem"] = async (itemId, patch) => {
-    await supabase.from("menu_items").update(patch as any).eq("id", itemId);
+    await supabase.from("menu_items").update(patch).eq("id", itemId);
     await loadSnackbars();
   };
-
 
   const toggleMenuItemActive: AuthContextValue["toggleMenuItemActive"] = async (itemId) => {
     if (!mySnackbar) return;
