@@ -154,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           position: (m as { position?: number }).position ?? 0,
         }))
         .sort((a, b) => a.position - b.position),
-
+      view_count: (s as { view_count?: number }).view_count ?? 0,
     }));
     setSnackbars(list);
   }, []);
