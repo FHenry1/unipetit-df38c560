@@ -1,7 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search, SlidersHorizontal, Star, MapPin, Heart, Flame, X } from "lucide-react";
+import { Search, SlidersHorizontal, Star, Heart, Flame, X } from "lucide-react";
 import { useAuth, type SnackBar } from "@/lib/auth";
+import {
+  EMPTY_FILTERS,
+  FilterSheet,
+  applyFilters,
+  filtersActiveCount,
+  type SnackFilters,
+} from "@/components/FilterSheet";
+import { useUserLocation } from "@/hooks/use-user-location";
+import { distanceKm, formatDistance, isSnackbarOpen } from "@/lib/utils";
 
 const CATEGORIES = [
   { id: "all", label: "Todos", emoji: "✨" },
@@ -12,8 +21,6 @@ const CATEGORIES = [
   { id: "drinks", label: "Bebidas", emoji: "🥤" },
   { id: "sweets", label: "Doces", emoji: "🍩" },
 ];
-
-type SortKey = "rating" | "name";
 
 export const Route = createFileRoute("/_app/home")({
   component: HomePage,
@@ -30,39 +37,32 @@ function HomePage() {
   const { user, snackbars, toggleFavorite } = useAuth();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("all");
-  const [sort, setSort] = useState<SortKey>("rating");
-  const [minRating, setMinRating] = useState(0);
-  const [onlyFavs, setOnlyFavs] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<SnackFilters>(EMPTY_FILTERS);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = snackbars.filter((s) => {
       if (category !== "all" && !s.categories.includes(category)) return false;
-      if (s.rating < minRating) return false;
-      if (onlyFavs && !user?.favorites.includes(s.id)) return false;
       if (q) {
         const hay = (s.name + " " + s.description + " " + s.location).toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-    list = [...list].sort((a, b) =>
-      sort === "rating" ? b.rating - a.rating : a.name.localeCompare(b.name),
-    );
-    return list;
-  }, [snackbars, query, category, sort, minRating, onlyFavs, user]);
+    list = applyFilters(list, filters);
+    return list.sort((a, b) => b.rating - a.rating);
+  }, [snackbars, query, category, filters]);
 
   const featured = useMemo(
     () => [...snackbars].sort((a, b) => b.rating - a.rating).slice(0, 5),
     [snackbars],
   );
 
-  const activeFiltersCount =
-    (category !== "all" ? 1 : 0) + (minRating > 0 ? 1 : 0) + (onlyFavs ? 1 : 0) + (sort !== "rating" ? 1 : 0);
+  const activeFiltersCount = filtersActiveCount(filters) + (category !== "all" ? 1 : 0);
 
   return (
-    <div className="pb-6">
+    <div className="min-h-screen bg-white pb-6">
       {/* Banner */}
       <header className="relative overflow-hidden rounded-b-[2rem] bg-brand px-5 pb-8 pt-10 text-primary-foreground">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
@@ -99,7 +99,7 @@ function HomePage() {
             )}
           </div>
           <button
-            onClick={() => setFiltersOpen((v) => !v)}
+            onClick={() => setSheetOpen(true)}
             className="relative grid h-12 w-12 place-items-center rounded-2xl bg-white/15 backdrop-blur transition active:scale-95"
             aria-label="Filtros"
           >
@@ -136,79 +136,11 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Advanced filters panel */}
-      {filtersOpen && (
-        <section className="mt-4 px-5 animate-fade-in">
-          <div className="rounded-2xl bg-surface p-4 shadow-card">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Filtros</h3>
-              <button
-                onClick={() => {
-                  setCategory("all");
-                  setSort("rating");
-                  setMinRating(0);
-                  setOnlyFavs(false);
-                }}
-                className="text-xs font-medium text-[#5d0a1a]"
-              >
-                Limpar
-              </button>
-            </div>
-
-            <div className="mt-3">
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Ordenar por</p>
-              <div className="flex gap-2">
-                {(["rating", "name"] as SortKey[]).map((k) => (
-                  <button
-                    key={k}
-                    onClick={() => setSort(k)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                      sort === k
-                        ? "bg-brand text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {k === "rating" ? "Melhor avaliados" : "A → Z"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <p className="mb-2 text-xs font-medium text-muted-foreground">
-                Nota mínima: {minRating.toFixed(1)} ★
-              </p>
-              <input
-                type="range"
-                min={0}
-                max={5}
-                step={0.5}
-                value={minRating}
-                onChange={(e) => setMinRating(Number(e.target.value))}
-                className="w-full accent-[#5d0a1a]"
-              />
-            </div>
-
-            <label className="mt-4 flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2">
-                <Heart size={14} className="text-[#5d0a1a]" /> Só favoritas
-              </span>
-              <input
-                type="checkbox"
-                checked={onlyFavs}
-                onChange={(e) => setOnlyFavs(e.target.checked)}
-                className="h-4 w-4 accent-[#5d0a1a]"
-              />
-            </label>
-          </div>
-        </section>
-      )}
-
       {/* Featured carousel */}
       {!query && category === "all" && featured.length > 0 && (
         <section className="mt-6">
           <div className="mb-3 flex items-end justify-between px-5">
-            <h2 className="flex items-center gap-1.5 text-sm font-bold">
+            <h2 className="flex items-center gap-1.5 text-sm font-bold text-foreground">
               <Flame size={14} className="text-[#5d0a1a]" /> Em destaque
             </h2>
             <span className="text-xs text-muted-foreground">Top da semana</span>
@@ -224,7 +156,7 @@ function HomePage() {
       {/* List */}
       <section className="mt-6 px-5">
         <div className="mb-3 flex items-end justify-between">
-          <h2 className="text-sm font-bold">
+          <h2 className="text-sm font-bold text-foreground">
             {query || category !== "all" ? "Resultados" : "Para você"}
           </h2>
           <span className="text-xs text-muted-foreground">
@@ -253,6 +185,16 @@ function HomePage() {
           </div>
         )}
       </section>
+
+      <FilterSheet
+        open={sheetOpen}
+        initial={filters}
+        onClose={() => setSheetOpen(false)}
+        onApply={(f) => {
+          setFilters(f);
+          setSheetOpen(false);
+        }}
+      />
     </div>
   );
 }
@@ -266,6 +208,13 @@ function FeaturedCard({
   isFav: boolean;
   onFav: (id: string) => Promise<void>;
 }) {
+  const userPos = useUserLocation();
+  const openState = isSnackbarOpen(s.opening_time, s.closing_time);
+  const dist =
+    userPos && s.lat != null && s.lng != null
+      ? distanceKm(userPos.lat, userPos.lng, s.lat, s.lng)
+      : null;
+
   return (
     <Link
       to="/snackbar/$id"
@@ -291,9 +240,23 @@ function FeaturedCard({
         <div className="flex items-center gap-1 text-[11px] font-semibold">
           <Star size={11} className="fill-amber-400 text-amber-400" />
           {s.rating.toFixed(1)}
-          <span className="opacity-70">· {s.location}</span>
         </div>
         <h3 className="mt-0.5 text-sm font-bold leading-tight">{s.name}</h3>
+        {(openState !== null || dist !== null) && (
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
+            {openState === true && (
+              <span className="rounded-full bg-emerald-100/90 px-1.5 py-0.5 font-semibold text-emerald-700">
+                ● Aberto
+              </span>
+            )}
+            {openState === false && (
+              <span className="rounded-full bg-rose-100/90 px-1.5 py-0.5 font-semibold text-rose-700">
+                ● Fechado
+              </span>
+            )}
+            {dist !== null && <span className="opacity-90">📍 {formatDistance(dist)}</span>}
+          </div>
+        )}
       </div>
     </Link>
   );
@@ -308,6 +271,13 @@ function SnackCard({
   isFav: boolean;
   onFav: (id: string) => Promise<void>;
 }) {
+  const userPos = useUserLocation();
+  const openState = isSnackbarOpen(s.opening_time, s.closing_time);
+  const dist =
+    userPos && s.lat != null && s.lng != null
+      ? distanceKm(userPos.lat, userPos.lng, s.lat, s.lng)
+      : null;
+
   return (
     <Link
       to="/snackbar/$id"
@@ -337,11 +307,24 @@ function SnackCard({
               {s.rating.toFixed(1)}
             </div>
           </div>
-          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{s.description}</p>
+          {(openState !== null || dist !== null) && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px]">
+              {openState === true && (
+                <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700">
+                  ● Aberto
+                </span>
+              )}
+              {openState === false && (
+                <span className="rounded-full bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-700">
+                  ● Fechado
+                </span>
+              )}
+              {dist !== null && (
+                <span className="text-muted-foreground">📍 {formatDistance(dist)}</span>
+              )}
+            </div>
+          )}
         </div>
-        <p className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-          <MapPin size={10} /> {s.location}
-        </p>
       </div>
     </Link>
   );

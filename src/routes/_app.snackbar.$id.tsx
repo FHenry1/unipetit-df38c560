@@ -6,10 +6,9 @@ import {
   MapPin,
   Share2,
   Star,
-  Trash2,
   MessageCircle,
-  Navigation,
 } from "lucide-react";
+
 import { useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -23,8 +22,8 @@ export const Route = createFileRoute("/_app/snackbar/$id")({
 
 function SnackBarDetail() {
   const { id } = Route.useParams();
-  const { snackbars, user, toggleFavorite, reviews, upsertReview, deleteReview } =
-    useAuth();
+  const { snackbars, user, toggleFavorite, reviews, upsertReview } = useAuth();
+
   const s = snackbars.find((x) => x.id === id);
   const [tab, setTab] = useState<"menu" | "reviews" | "info">("menu");
 
@@ -174,9 +173,9 @@ function SnackBarDetail() {
               myReview={myReview}
               canReview={!!user && user.id !== s.owner_id}
               upsertReview={upsertReview}
-              deleteReview={deleteReview}
             />
           )}
+
           {tab === "info" && <InfoTab snackbar={s} />}
         </div>
       </div>
@@ -227,29 +226,25 @@ function ReviewsTab({
   myReview,
   canReview,
   upsertReview,
-  deleteReview,
 }: {
   snackbarId: string;
   reviews: Review[];
   myReview?: Review;
   canReview: boolean;
   upsertReview: ReturnType<typeof useAuth>["upsertReview"];
-  deleteReview: ReturnType<typeof useAuth>["deleteReview"];
 }) {
   const [rating, setRating] = useState<number>(myReview?.rating ?? 0);
   const [comment, setComment] = useState<string>(myReview?.comment ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState(!myReview);
 
   useEffect(() => {
     setRating(myReview?.rating ?? 0);
     setComment(myReview?.comment ?? "");
-    setEditing(!myReview);
   }, [myReview?.id]);
 
   const distribution = useMemo(() => {
-    const buckets = [0, 0, 0, 0, 0]; // index 0 = 1 star
+    const buckets = [0, 0, 0, 0, 0];
     reviews.forEach((r) => {
       if (r.rating >= 1 && r.rating <= 5) buckets[r.rating - 1] += 1;
     });
@@ -281,7 +276,6 @@ function ReviewsTab({
       return;
     }
     toast.success("Avaliação publicada");
-    setEditing(false);
   };
 
   return (
@@ -322,14 +316,14 @@ function ReviewsTab({
         </div>
       )}
 
-      {/* My review form */}
+      {/* My review - read-only if exists, form otherwise */}
       {canReview && (
         <div className="rounded-2xl border border-brand/20 bg-brand-soft/40 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-brand">
             {myReview ? "Sua avaliação" : "Avaliar essa lanchonete"}
           </p>
 
-          {!editing && myReview ? (
+          {myReview ? (
             <div className="mt-2">
               <StarRow rating={myReview.rating} size={18} />
               {myReview.comment && (
@@ -341,24 +335,6 @@ function ReviewsTab({
                   at={myReview.owner_reply_at}
                 />
               )}
-              <div className="mt-3 flex gap-2">
-                <button
-                  onClick={() => setEditing(true)}
-                  className="flex-1 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-primary-foreground transition hover:opacity-90 active:scale-95"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={async () => {
-                    await deleteReview(myReview.id);
-                    toast.success("Avaliação removida");
-                  }}
-                  className="grid h-9 w-9 place-items-center rounded-lg border border-border text-muted-foreground transition hover:border-rose-500 hover:text-rose-500"
-                  aria-label="Excluir avaliação"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
             </div>
           ) : (
             <div className="mt-2 space-y-3">
@@ -378,33 +354,19 @@ function ReviewsTab({
                 <span className="text-[11px] text-muted-foreground">
                   {comment.length}/500
                 </span>
-                <div className="flex gap-2">
-                  {myReview && (
-                    <button
-                      onClick={() => {
-                        setEditing(false);
-                        setRating(myReview.rating);
-                        setComment(myReview.comment);
-                        setError(null);
-                      }}
-                      className="rounded-lg border border-border px-3 py-2 text-xs font-semibold"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                  <button
-                    onClick={onSubmit}
-                    disabled={saving}
-                    className="rounded-lg bg-brand px-4 py-2 text-xs font-bold text-primary-foreground transition hover:opacity-90 active:scale-95 disabled:opacity-70"
-                  >
-                    {saving ? "Salvando..." : myReview ? "Atualizar" : "Publicar"}
-                  </button>
-                </div>
+                <button
+                  onClick={onSubmit}
+                  disabled={saving}
+                  className="rounded-lg bg-brand px-4 py-2 text-xs font-bold text-primary-foreground transition hover:opacity-90 active:scale-95 disabled:opacity-70"
+                >
+                  {saving ? "Salvando..." : "Publicar"}
+                </button>
               </div>
             </div>
           )}
         </div>
       )}
+
 
       {/* List */}
       {otherReviews.length === 0 && !myReview ? (
@@ -492,52 +454,45 @@ function OwnerReplyBlock({ reply, at }: { reply: string; at: string | null }) {
 /* ---------------- INFO ---------------- */
 
 function InfoTab({ snackbar }: { snackbar: ReturnType<typeof useAuth>["snackbars"][number] }) {
-  const mapsHref =
+  const mapSrc =
     snackbar.lat != null && snackbar.lng != null
-      ? `https://www.google.com/maps/search/?api=1&query=${snackbar.lat},${snackbar.lng}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(snackbar.location)}`;
+      ? `https://www.google.com/maps?q=${snackbar.lat},${snackbar.lng}&output=embed`
+      : `https://www.google.com/maps?q=${encodeURIComponent(snackbar.location)}&output=embed`;
 
-  const hours = [
-    { d: "Segunda – Sexta", h: "11h – 23h" },
-    { d: "Sábado", h: "11h – 00h" },
-    { d: "Domingo", h: "12h – 22h" },
-  ];
+  const formatHHMM = (t: string | null) => (t ? t.slice(0, 5) : null);
+  const openLabel = formatHHMM(snackbar.opening_time);
+  const closeLabel = formatHHMM(snackbar.closing_time);
 
   return (
     <div className="space-y-4 text-sm">
-      <a
-        href={mapsHref}
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center gap-3 rounded-xl border border-border bg-background p-3.5 transition hover:border-brand/40 hover:shadow-sm"
-      >
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-soft text-brand">
-          <Navigation size={16} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-white">
-            Endereço
-          </p>
-          <p className="truncate font-medium text-white">
-            {snackbar.location}
-          </p>
-        </div>
-        <span className="text-xs font-semibold text-brand">Abrir</span>
-      </a>
+      <div className="rounded-xl border border-border bg-background p-3.5">
+        <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-white">
+          <MapPin size={12} /> Endereço
+        </p>
+        <p className="mt-1 font-medium text-white">{snackbar.location}</p>
+        <iframe
+          title="Localização no mapa"
+          className="mt-3 h-56 w-full rounded-2xl border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          src={mapSrc}
+        />
+      </div>
+
 
       <div className="rounded-xl border border-border bg-background p-3.5">
         <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-white">
           <Clock size={12} /> Horário de funcionamento
         </p>
-        <ul className="mt-2 divide-y divide-border text-sm">
-          {hours.map((h) => (
-            <li key={h.d} className="flex items-center justify-between py-2">
-              <span className="text-white">{h.d}</span>
-              <span className="font-semibold text-white">{h.h}</span>
-            </li>
-          ))}
-        </ul>
+        {openLabel && closeLabel ? (
+          <p className="mt-2 text-sm font-semibold text-white">
+            {openLabel} – {closeLabel}
+          </p>
+        ) : (
+          <p className="mt-2 text-sm text-white/70">Horário não informado</p>
+        )}
       </div>
+
 
       {snackbar.categories.length > 0 && (
         <div className="rounded-xl border border-border bg-background p-3.5">
