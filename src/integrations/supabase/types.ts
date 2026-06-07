@@ -318,6 +318,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      become_owner: { Args: never; Returns: string }
+      exit_owner_mode: { Args: never; Returns: undefined }
       get_public_profiles: {
         Args: { _ids: string[] }
         Returns: {
