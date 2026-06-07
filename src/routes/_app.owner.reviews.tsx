@@ -282,3 +282,28 @@ function Stars({ value }: { value: number }) {
     </div>
   );
 }
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+        active
+          ? "border-[#e85d75] bg-[#5d0a1a] text-white"
+          : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-700"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
