@@ -2,30 +2,58 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ChevronRight,
   Heart,
+  KeyRound,
+  Loader2,
   LogOut,
-  Settings,
+  Mail,
+  MapPin,
+  Phone,
+  Receipt,
+  RotateCcw,
+  Save,
   Sparkles,
   Star,
   Store,
   TrendingUp,
+  User as UserIcon,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_app/profile")({
   component: ProfilePage,
 });
 
+const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
+  pending: { label: "Pendente", cls: "bg-amber-100 text-amber-800" },
+  preparing: { label: "Preparando", cls: "bg-blue-100 text-blue-800" },
+  ready: { label: "Pronto", cls: "bg-emerald-100 text-emerald-800" },
+  delivered: { label: "Entregue", cls: "bg-zinc-200 text-zinc-700" },
+  cancelled: { label: "Cancelado", cls: "bg-rose-100 text-rose-700" },
+};
+
 function ProfilePage() {
-  const { user, logout, becomeOwner, snackbars, reviews } = useAuth();
+  const {
+    user,
+    logout,
+    becomeOwner,
+    snackbars,
+    orders,
+    updateProfile,
+    getOrderItems,
+    refresh,
+  } = useAuth();
   const navigate = useNavigate();
   const [loadingOwner, setLoadingOwner] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
+  const [repeating, setRepeating] = useState<string | null>(null);
+
   if (!user) return null;
 
   const favs = snackbars.filter((s) => user.favorites.includes(s.id));
-  const myReviews = reviews
-    .filter((r) => r.user_id === user.id)
-    .map((r) => ({ ...r, snackbar: snackbars.find((s) => s.id === r.snackbar_id) }));
+  const myOrders = orders.slice(0, 10);
 
   const onBecomeOwner = async () => {
     if (loadingOwner) return;
@@ -35,6 +63,42 @@ function ProfilePage() {
       navigate({ to: "/owner" });
     } finally {
       setLoadingOwner(false);
+    }
+  };
+
+  const onRepeat = async (orderId: string, snackbarId: string) => {
+    setRepeating(orderId);
+    try {
+      const items = await getOrderItems(orderId);
+      if (items.length === 0) {
+        navigate({ to: "/snackbar/$id", params: { id: snackbarId } });
+        return;
+      }
+      const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
+      const { data: newOrder, error } = await supabase
+        .from("orders")
+        .insert({
+          snackbar_id: snackbarId,
+          user_id: user.id,
+          customer_name: user.name,
+          total,
+          status: "pending",
+        })
+        .select("id")
+        .single();
+      if (error || !newOrder) throw error;
+      await supabase.from("order_items").insert(
+        items.map((i) => ({
+          order_id: newOrder.id,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      );
+      await refresh();
+      navigate({ to: "/snackbar/$id", params: { id: snackbarId } });
+    } finally {
+      setRepeating(null);
     }
   };
 
@@ -63,36 +127,67 @@ function ProfilePage() {
         </div>
       </div>
 
-      <div className="-mt-10 px-5">
+      <div className="-mt-10 space-y-6 px-5">
         {/* Stats */}
-        <section className="grid grid-cols-2 gap-3">
-          <StatCard
-            icon={<Heart size={16} className="text-rose-500" />}
-            label="Favoritos"
-            value={favs.length}
-          />
-          <StatCard
-            icon={<Star size={16} className="text-amber-500" />}
-            label="Avaliações"
-            value={myReviews.length}
-          />
+        <section className="grid grid-cols-3 gap-3">
+          <StatCard icon={<Heart size={16} className="text-rose-500" />} label="Favoritos" value={favs.length} />
+          <StatCard icon={<Receipt size={16} className="text-brand" />} label="Pedidos" value={orders.length} />
+          <StatCard icon={<Star size={16} className="text-amber-500" />} label="Repedidos" value={orders.filter(o => o.status === "delivered").length} />
+        </section>
+
+        {/* Editar dados */}
+        <ProfileForm
+          initial={{ name: user.name, phone: user.phone, address: user.address }}
+          email={user.email}
+          onSave={updateProfile}
+        />
+
+        {/* Histórico de pedidos */}
+        <section>
+          <SectionHeader icon={<Receipt size={14} className="text-brand" />} title="Histórico de pedidos" count={myOrders.length} />
+          {myOrders.length === 0 ? (
+            <EmptyState icon={<Receipt size={18} className="text-brand" />} title="Sem pedidos ainda" subtitle="Quando você fizer um pedido ele aparece aqui." />
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {myOrders.map((o) => {
+                const sb = snackbars.find((s) => s.id === o.snackbar_id);
+                const st = STATUS_LABEL[o.status] ?? STATUS_LABEL.pending;
+                return (
+                  <li key={o.id} className="rounded-2xl bg-surface p-3 text-surface-foreground shadow-card">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 shrink-0 rounded-xl bg-cover bg-center bg-muted" style={{ backgroundImage: sb ? `url(${sb.cover})` : undefined }} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="truncate text-sm font-semibold">{sb?.name ?? "Lanchonete"}</h4>
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${st.cls}`}>{st.label}</span>
+                        </div>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {new Date(o.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} · R$ {o.total.toFixed(2)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => onRepeat(o.id, o.snackbar_id)}
+                        disabled={repeating === o.id || !sb}
+                        className="flex shrink-0 items-center gap-1 rounded-lg bg-brand-soft px-2.5 py-1.5 text-[11px] font-semibold text-brand hover:bg-brand/10 disabled:opacity-60"
+                      >
+                        {repeating === o.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                        Repedir
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
 
         {/* Favoritos */}
-        <section className="mt-6">
-          <SectionHeader
-            icon={<Heart size={14} className="text-rose-500" />}
-            title="Meus favoritos"
-            count={favs.length}
-          />
+        <section>
+          <SectionHeader icon={<Heart size={14} className="text-rose-500" />} title="Meus favoritos" count={favs.length} />
           {favs.length === 0 ? (
-            <EmptyState
-              icon={<Heart size={18} className="text-rose-500" />}
-              title="Nenhum favorito ainda"
-              subtitle="Toque no coração das lanchonetes para salvá-las aqui."
-            />
+            <EmptyState icon={<Heart size={18} className="text-rose-500" />} title="Nenhum favorito ainda" subtitle="Toque no coração das lanchonetes para salvá-las aqui." />
           ) : (
-            <ul className="mt-3 space-y-3">
+            <ul className="mt-3 space-y-2">
               {favs.map((s) => (
                 <li key={s.id}>
                   <Link
@@ -100,31 +195,18 @@ function ProfilePage() {
                     params={{ id: s.id }}
                     className="flex items-center gap-3 rounded-2xl bg-surface p-3 text-surface-foreground shadow-card transition active:scale-[0.99]"
                   >
-                    <div
-                      className="h-16 w-16 shrink-0 rounded-xl bg-cover bg-center"
-                      style={{ backgroundImage: `url(${s.cover})` }}
-                    />
+                    <div className="h-14 w-14 shrink-0 rounded-xl bg-cover bg-center" style={{ backgroundImage: `url(${s.cover})` }} />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="truncate text-sm font-semibold">
-                          {s.name}
-                        </h4>
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="truncate text-sm font-semibold">{s.name}</h4>
                         <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold">
                           <Star size={10} className="fill-current text-amber-500" />
                           {s.rating.toFixed(1)}
                         </span>
                       </div>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                        {s.location}
-                      </p>
-                      <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground/80">
-                        {s.description}
-                      </p>
+                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{s.location}</p>
                     </div>
-                    <ChevronRight
-                      size={16}
-                      className="shrink-0 text-muted-foreground"
-                    />
+                    <ChevronRight size={16} className="shrink-0 text-muted-foreground" />
                   </Link>
                 </li>
               ))}
@@ -132,101 +214,50 @@ function ProfilePage() {
           )}
         </section>
 
-        {/* Avaliações */}
-        <section className="mt-6">
-          <SectionHeader
-            icon={<Star size={14} className="text-amber-500" />}
-            title="Minhas avaliações"
-            count={myReviews.length}
-          />
-          {myReviews.length === 0 ? (
-            <EmptyState
-              icon={<Star size={18} className="text-amber-500" />}
-              title="Você ainda não avaliou"
-              subtitle="Compartilhe sua experiência nas lanchonetes que visitou."
-            />
-          ) : (
-            <ul className="mt-3 space-y-3">
-              {myReviews.map((r) => (
-                <li key={r.id}>
-                  {r.snackbar ? (
-                    <Link
-                      to="/snackbar/$id"
-                      params={{ id: r.snackbar.id }}
-                      className="block rounded-2xl bg-surface p-3 text-surface-foreground shadow-card transition active:scale-[0.99]"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="h-12 w-12 shrink-0 rounded-xl bg-cover bg-center"
-                          style={{ backgroundImage: `url(${r.snackbar.cover})` }}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <h4 className="truncate text-sm font-semibold">
-                              {r.snackbar.name}
-                            </h4>
-                            <span className="flex shrink-0 items-center gap-0.5">
-                              {[1, 2, 3, 4, 5].map((n) => (
-                                <Star
-                                  key={n}
-                                  size={11}
-                                  className={
-                                    n <= r.rating
-                                      ? "fill-amber-400 text-amber-400"
-                                      : "text-muted-foreground/30"
-                                  }
-                                />
-                              ))}
-                            </span>
-                          </div>
-                          {r.comment && (
-                            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                              {r.comment}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {/* Settings */}
-        <section className="mt-6 overflow-hidden rounded-2xl bg-surface text-surface-foreground shadow-card">
-          <Row icon={<Settings size={16} />} label="Configurações" />
+        {/* Segurança */}
+        <section className="overflow-hidden rounded-2xl bg-surface text-surface-foreground shadow-card">
+          <button
+            onClick={() => setShowPwd(true)}
+            className="flex w-full items-center justify-between border-b border-border px-4 py-3.5 text-left hover:bg-muted/40"
+          >
+            <span className="flex items-center gap-3 text-sm font-medium">
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-soft text-brand"><KeyRound size={16} /></span>
+              Trocar senha
+            </span>
+            <ChevronRight size={16} className="text-muted-foreground" />
+          </button>
+          <button
+            onClick={async () => {
+              await logout();
+              navigate({ to: "/" });
+            }}
+            className="flex w-full items-center justify-between px-4 py-3.5 text-left hover:bg-muted/40"
+          >
+            <span className="flex items-center gap-3 text-sm font-medium text-rose-600">
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-rose-100 text-rose-600"><LogOut size={16} /></span>
+              Sair da conta
+            </span>
+            <ChevronRight size={16} className="text-muted-foreground" />
+          </button>
         </section>
 
         {/* Become owner */}
         {user.role === "user" && (
           <section
-            className="relative mt-5 overflow-hidden rounded-2xl p-5 text-white shadow-glow"
-            style={{
-              background:
-                "linear-gradient(135deg,#7a1228 0%,#5d0a1a 55%,#3a0510 100%)",
-            }}
+            className="relative overflow-hidden rounded-2xl p-5 text-white shadow-glow"
+            style={{ background: "linear-gradient(135deg,#7a1228 0%,#5d0a1a 55%,#3a0510 100%)" }}
           >
-            <div
-              aria-hidden
-              className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl"
-            />
+            <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
             <div className="relative">
               <div className="flex items-center gap-2">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15">
-                  <Store size={18} />
-                </span>
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15"><Store size={18} /></span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#3a0510]">
                   <TrendingUp size={10} /> Novo
                 </span>
               </div>
-              <h3 className="mt-3 text-base font-extrabold">
-                Deseja divulgar sua lanchonete?
-              </h3>
+              <h3 className="mt-3 text-base font-extrabold">Deseja divulgar sua lanchonete?</h3>
               <p className="mt-1 text-xs leading-relaxed text-white/85">
-                Torne-se dono no UniPetit, cadastre seu menu e alcance novos
-                clientes na universidade.
+                Torne-se dono no UniPetit, cadastre seu menu e alcance novos clientes na universidade.
               </p>
               <button
                 onClick={onBecomeOwner}
@@ -241,119 +272,170 @@ function ProfilePage() {
         )}
 
         {user.role === "owner" && (
-          <Link
-            to="/owner"
-            className="mt-5 flex items-center justify-between rounded-2xl bg-surface px-4 py-4 text-surface-foreground shadow-card"
-          >
+          <Link to="/owner" className="flex items-center justify-between rounded-2xl bg-surface px-4 py-4 text-surface-foreground shadow-card">
             <span className="flex items-center gap-2 font-semibold">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-soft text-brand">
-                <Store size={16} />
-              </span>
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-soft text-brand"><Store size={16} /></span>
               Ir para o painel do proprietário
             </span>
             <ChevronRight size={16} className="text-muted-foreground" />
           </Link>
         )}
+      </div>
 
-        <button
-          onClick={async () => {
-            await logout();
-            navigate({ to: "/" });
-          }}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/5 py-3 text-sm font-semibold text-white hover:bg-white/10"
-        >
-          <LogOut size={16} /> Sair
-        </button>
+      {showPwd && <ChangePasswordModal onClose={() => setShowPwd(false)} />}
+    </div>
+  );
+}
+
+function ProfileForm({
+  initial,
+  email,
+  onSave,
+}: {
+  initial: { name: string; phone: string; address: string };
+  email: string;
+  onSave: (patch: { name?: string; phone?: string; address?: string }) => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const [name, setName] = useState(initial.name);
+  const [phone, setPhone] = useState(initial.phone);
+  const [address, setAddress] = useState(initial.address);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const dirty = useMemo(
+    () => name !== initial.name || phone !== initial.phone || address !== initial.address,
+    [name, phone, address, initial],
+  );
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dirty || saving) return;
+    setSaving(true);
+    setMsg(null);
+    const res = await onSave({ name, phone, address });
+    setSaving(false);
+    setMsg(res.ok ? { ok: true, text: "Dados atualizados!" } : { ok: false, text: res.error ?? "Erro ao salvar" });
+    setTimeout(() => setMsg(null), 3000);
+  };
+
+  return (
+    <form onSubmit={onSubmit} className="rounded-2xl bg-surface p-4 text-surface-foreground shadow-card">
+      <h3 className="mb-3 text-sm font-bold">Meus dados</h3>
+      <div className="space-y-3">
+        <Field icon={<UserIcon size={14} />} label="Nome">
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} className="input-bare" placeholder="Seu nome" />
+        </Field>
+        <Field icon={<Mail size={14} />} label="E-mail (não editável)">
+          <input value={email} readOnly className="input-bare cursor-not-allowed text-muted-foreground" />
+        </Field>
+        <Field icon={<Phone size={14} />} label="Telefone">
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={30} inputMode="tel" className="input-bare" placeholder="(11) 99999-0000" />
+        </Field>
+        <Field icon={<MapPin size={14} />} label="Endereço padrão">
+          <input value={address} onChange={(e) => setAddress(e.target.value)} maxLength={200} className="input-bare" placeholder="Rua, número — bairro" />
+        </Field>
+      </div>
+      <button
+        type="submit"
+        disabled={!dirty || saving}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-50"
+      >
+        {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+        Salvar alterações
+      </button>
+      {msg && (
+        <p className={`mt-2 text-center text-xs font-semibold ${msg.ok ? "text-emerald-600" : "text-rose-600"}`}>{msg.text}</p>
+      )}
+      <style>{`.input-bare{width:100%;background:transparent;outline:none;font-size:14px;font-weight:500;color:inherit}`}</style>
+    </form>
+  );
+}
+
+function Field({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+  return (
+    <label className="block rounded-xl border border-border bg-background px-3 py-2">
+      <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+        {icon} {label}
+      </span>
+      <div className="mt-0.5">{children}</div>
+    </label>
+  );
+}
+
+function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const { updatePassword } = useAuth();
+  const [pwd, setPwd] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    if (pwd.length < 6) return setErr("Mínimo 6 caracteres");
+    if (pwd !== confirm) return setErr("As senhas não coincidem");
+    setSaving(true);
+    const res = await updatePassword(pwd);
+    setSaving(false);
+    if (!res.ok) return setErr(res.error ?? "Erro");
+    setOk(true);
+    setTimeout(onClose, 1200);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-t-3xl bg-surface p-5 text-surface-foreground shadow-2xl sm:rounded-2xl"
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-base font-bold">Trocar senha</h3>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted"><X size={16} /></button>
+        </div>
+        <form onSubmit={submit} className="space-y-3">
+          <input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="Nova senha" className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-brand" autoFocus />
+          <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Confirmar nova senha" className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none focus:border-brand" />
+          {err && <p className="text-xs font-semibold text-rose-600">{err}</p>}
+          {ok && <p className="text-xs font-semibold text-emerald-600">Senha atualizada!</p>}
+          <button type="submit" disabled={saving || ok} className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-bold text-white disabled:opacity-60">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
+            Atualizar senha
+          </button>
+        </form>
       </div>
     </div>
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-}) {
+function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
-    <div className="rounded-2xl bg-surface p-4 text-surface-foreground shadow-card">
+    <div className="rounded-2xl bg-surface p-3 text-surface-foreground shadow-card">
       <div className="flex items-center justify-between">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-muted">
-          {icon}
-        </span>
-        <span className="text-2xl font-extrabold">{value}</span>
+        <span className="grid h-8 w-8 place-items-center rounded-xl bg-muted">{icon}</span>
+        <span className="text-xl font-extrabold">{value}</span>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-[11px] text-muted-foreground">{label}</p>
     </div>
   );
 }
 
-function Row({
-  icon,
-  label,
-  hint,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  hint?: string;
-}) {
-  return (
-    <button className="flex w-full items-center justify-between border-b border-border px-4 py-3.5 text-left last:border-0 hover:bg-muted/40">
-      <span className="flex items-center gap-3 text-sm font-medium">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-soft text-brand">
-          {icon}
-        </span>
-        {label}
-      </span>
-      <span className="flex items-center gap-2 text-xs text-muted-foreground">
-        {hint}
-        <ChevronRight size={16} />
-      </span>
-    </button>
-  );
-}
-
-function SectionHeader({
-  icon,
-  title,
-  count,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  count: number;
-}) {
+function SectionHeader({ icon, title, count }: { icon: React.ReactNode; title: string; count: number }) {
   return (
     <div className="flex items-center justify-between px-1">
       <h3 className="flex items-center gap-2 text-sm font-bold text-white">
-        <span className="grid h-7 w-7 place-items-center rounded-lg bg-white/15 backdrop-blur">
-          {icon}
-        </span>
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-white/15 backdrop-blur">{icon}</span>
         {title}
       </h3>
-      <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">
-        {count}
-      </span>
+      <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">{count}</span>
     </div>
   );
 }
 
-function EmptyState({
-  icon,
-  title,
-  subtitle,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-}) {
+function EmptyState({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
   return (
     <div className="mt-3 flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/20 bg-white/5 px-5 py-7 text-center">
-      <span className="grid h-10 w-10 place-items-center rounded-full bg-white/10">
-        {icon}
-      </span>
+      <span className="grid h-10 w-10 place-items-center rounded-full bg-white/10">{icon}</span>
       <p className="text-sm font-semibold text-white">{title}</p>
       <p className="text-xs text-white/70">{subtitle}</p>
     </div>
