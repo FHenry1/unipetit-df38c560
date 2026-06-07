@@ -20,6 +20,7 @@ import { Route as AppMapRouteImport } from './routes/_app.map'
 import { Route as AppHomeRouteImport } from './routes/_app.home'
 import { Route as AppSnackbarIdRouteImport } from './routes/_app.snackbar.$id'
 import { Route as AppOwnerReviewsRouteImport } from './routes/_app.owner.reviews'
+import { Route as AppOwnerProfileRouteImport } from './routes/_app.owner.profile'
 import { Route as AppOwnerOrdersRouteImport } from './routes/_app.owner.orders'
 import { Route as AppOwnerMenuRouteImport } from './routes/_app.owner.menu'
 
@@ -77,6 +78,11 @@ const AppOwnerReviewsRoute = AppOwnerReviewsRouteImport.update({
   path: '/reviews',
   getParentRoute: () => AppOwnerRoute,
 } as any)
+const AppOwnerProfileRoute = AppOwnerProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppOwnerRoute,
+} as any)
 const AppOwnerOrdersRoute = AppOwnerOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof AppSearchRoute
   '/owner/menu': typeof AppOwnerMenuRoute
   '/owner/orders': typeof AppOwnerOrdersRoute
+  '/owner/profile': typeof AppOwnerProfileRoute
   '/owner/reviews': typeof AppOwnerReviewsRoute
   '/snackbar/$id': typeof AppSnackbarIdRoute
 }
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/search': typeof AppSearchRoute
   '/owner/menu': typeof AppOwnerMenuRoute
   '/owner/orders': typeof AppOwnerOrdersRoute
+  '/owner/profile': typeof AppOwnerProfileRoute
   '/owner/reviews': typeof AppOwnerReviewsRoute
   '/snackbar/$id': typeof AppSnackbarIdRoute
 }
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/_app/search': typeof AppSearchRoute
   '/_app/owner/menu': typeof AppOwnerMenuRoute
   '/_app/owner/orders': typeof AppOwnerOrdersRoute
+  '/_app/owner/profile': typeof AppOwnerProfileRoute
   '/_app/owner/reviews': typeof AppOwnerReviewsRoute
   '/_app/snackbar/$id': typeof AppSnackbarIdRoute
 }
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/owner/menu'
     | '/owner/orders'
+    | '/owner/profile'
     | '/owner/reviews'
     | '/snackbar/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/owner/menu'
     | '/owner/orders'
+    | '/owner/profile'
     | '/owner/reviews'
     | '/snackbar/$id'
   id:
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/_app/search'
     | '/_app/owner/menu'
     | '/_app/owner/orders'
+    | '/_app/owner/profile'
     | '/_app/owner/reviews'
     | '/_app/snackbar/$id'
   fileRoutesById: FileRoutesById
@@ -264,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOwnerReviewsRouteImport
       parentRoute: typeof AppOwnerRoute
     }
+    '/_app/owner/profile': {
+      id: '/_app/owner/profile'
+      path: '/profile'
+      fullPath: '/owner/profile'
+      preLoaderRoute: typeof AppOwnerProfileRouteImport
+      parentRoute: typeof AppOwnerRoute
+    }
     '/_app/owner/orders': {
       id: '/_app/owner/orders'
       path: '/orders'
@@ -284,12 +303,14 @@ declare module '@tanstack/react-router' {
 interface AppOwnerRouteChildren {
   AppOwnerMenuRoute: typeof AppOwnerMenuRoute
   AppOwnerOrdersRoute: typeof AppOwnerOrdersRoute
+  AppOwnerProfileRoute: typeof AppOwnerProfileRoute
   AppOwnerReviewsRoute: typeof AppOwnerReviewsRoute
 }
 
 const AppOwnerRouteChildren: AppOwnerRouteChildren = {
   AppOwnerMenuRoute: AppOwnerMenuRoute,
   AppOwnerOrdersRoute: AppOwnerOrdersRoute,
+  AppOwnerProfileRoute: AppOwnerProfileRoute,
   AppOwnerReviewsRoute: AppOwnerReviewsRoute,
 }
 
@@ -326,3 +347,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
