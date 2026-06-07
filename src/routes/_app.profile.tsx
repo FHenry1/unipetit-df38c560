@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ChevronRight,
-  DoorOpen,
+  
   Heart,
   KeyRound,
   Loader2,
