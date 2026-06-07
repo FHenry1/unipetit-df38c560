@@ -16,7 +16,10 @@ export interface MenuItem {
   name: string;
   description: string;
   price: number;
+  is_active: boolean;
+  position: number;
 }
+
 
 export interface SnackBar {
   id: string;
@@ -89,9 +92,12 @@ interface AuthContextValue {
   exitOwnerMode: () => Promise<void>;
   toggleFavorite: (snackbarId: string) => Promise<void>;
   updateMySnackbar: (patch: Partial<SnackBar>) => Promise<void>;
-  addMenuItem: (item: Omit<MenuItem, "id">) => Promise<void>;
+  addMenuItem: (item: Pick<MenuItem, "name" | "description" | "price">) => Promise<void>;
   removeMenuItem: (itemId: string) => Promise<void>;
   updateMenuItem: (itemId: string, patch: Partial<Omit<MenuItem, "id">>) => Promise<void>;
+  toggleMenuItemActive: (itemId: string) => Promise<void>;
+  reorderMenuItems: (orderedIds: string[]) => Promise<void>;
+
   upsertReview: (
     snackbarId: string,
     rating: number,
@@ -143,7 +149,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: m.name,
           description: m.description,
           price: Number(m.price),
-        })),
+          is_active: (m as { is_active?: boolean }).is_active ?? true,
+          position: (m as { position?: number }).position ?? 0,
+        }))
+        .sort((a, b) => a.position - b.position),
+
     }));
     setSnackbars(list);
   }, []);
@@ -355,13 +365,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadSnackbars();
   };
 
-  const addMenuItem = async (item: Omit<MenuItem, "id">) => {
+  const addMenuItem: AuthContextValue["addMenuItem"] = async (item) => {
     if (!mySnackbar) return;
+    const nextPosition =
+      mySnackbar.menu_items.reduce((max, m) => Math.max(max, m.position), -1) + 1;
     await supabase.from("menu_items").insert({
       snackbar_id: mySnackbar.id,
       name: item.name,
       description: item.description,
       price: item.price,
+      is_active: true,
+      position: nextPosition,
     });
     await loadSnackbars();
   };
@@ -375,6 +389,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.from("menu_items").update(patch).eq("id", itemId);
     await loadSnackbars();
   };
+
+  const toggleMenuItemActive: AuthContextValue["toggleMenuItemActive"] = async (itemId) => {
+    if (!mySnackbar) return;
+    const current = mySnackbar.menu_items.find((m) => m.id === itemId);
+    if (!current) return;
+    await supabase
+      .from("menu_items")
+      .update({ is_active: !current.is_active })
+      .eq("id", itemId);
+    await loadSnackbars();
+  };
+
+  const reorderMenuItems: AuthContextValue["reorderMenuItems"] = async (orderedIds) => {
+    if (!mySnackbar) return;
+    await Promise.all(
+      orderedIds.map((id, index) =>
+        supabase.from("menu_items").update({ position: index }).eq("id", id),
+      ),
+    );
+    await loadSnackbars();
+  };
+
 
   const replyToReview: AuthContextValue["replyToReview"] = async (reviewId, reply) => {
     const trimmed = reply.trim().slice(0, 500);
@@ -487,6 +523,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         addMenuItem,
         removeMenuItem,
         updateMenuItem,
+        toggleMenuItemActive,
+        reorderMenuItems,
+
         upsertReview,
         deleteReview,
         replyToReview,
