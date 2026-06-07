@@ -82,17 +82,6 @@ function ProfilePage() {
     }
   };
 
-  const onExitOwner = async () => {
-    if (exitingOwner) return;
-    if (!window.confirm("Deseja voltar ao modo consumidor? Sua lanchonete continua salva.")) return;
-    setExitingOwner(true);
-    try {
-      await exitOwnerMode();
-      setTab("favorites");
-    } finally {
-      setExitingOwner(false);
-    }
-  };
 
   const onRepeat = async (orderId: string, snackbarId: string) => {
     setRepeating(orderId);
