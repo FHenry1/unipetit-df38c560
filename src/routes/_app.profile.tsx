@@ -43,7 +43,6 @@ function ProfilePage() {
   const {
     user,
     logout,
-    becomeOwner,
     snackbars,
     orders,
     reviews,
@@ -52,7 +51,6 @@ function ProfilePage() {
     refresh,
   } = useAuth();
   const navigate = useNavigate();
-  const [loadingOwner, setLoadingOwner] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [repeating, setRepeating] = useState<string | null>(null);
   const [tab, setTab] = useState<"favorites" | "reviews" | "settings">("favorites");
@@ -62,6 +60,10 @@ function ProfilePage() {
     navigate({ to: "/owner/profile", replace: true });
     return null;
   }
+  if (user?.role === "admin") {
+    navigate({ to: "/admin", replace: true });
+    return null;
+  }
 
   if (!user) return null;
 
@@ -69,16 +71,7 @@ function ProfilePage() {
   const myReviews = reviews.filter((r) => r.user_id === user.id);
   const myOrders = orders.slice(0, 10);
 
-  const onBecomeOwner = async () => {
-    if (loadingOwner) return;
-    setLoadingOwner(true);
-    try {
-      await becomeOwner();
-      navigate({ to: "/owner/profile" });
-    } finally {
-      setLoadingOwner(false);
-    }
-  };
+
 
 
   const onRepeat = async (orderId: string, snackbarId: string) => {
