@@ -28,6 +28,12 @@ function SnackBarDetail() {
   const s = snackbars.find((x) => x.id === id);
   const [tab, setTab] = useState<"menu" | "reviews" | "info">("menu");
 
+  useEffect(() => {
+    if (!id) return;
+    void supabase.rpc("increment_snackbar_views", { _id: id });
+  }, [id]);
+
+
   const snackReviews = useMemo(
     () => reviews.filter((r) => r.snackbar_id === id),
     [reviews, id],
