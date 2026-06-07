@@ -576,7 +576,7 @@ function EmptyCard({
       <p className="max-w-[28ch] text-xs text-muted-foreground">{subtitle}</p>
       {cta && (
         <Link
-          to={cta.to}
+          to="/home"
           className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand px-4 py-2 text-xs font-bold text-white shadow-glow transition active:scale-[0.98]"
         >
           {cta.label} <ChevronRight size={12} />
