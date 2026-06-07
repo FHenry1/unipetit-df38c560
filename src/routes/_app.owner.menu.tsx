@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { Check, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { OwnerHeader } from "@/components/OwnerHeader";
 import { useAuth, type MenuItem } from "@/lib/auth";
 
@@ -15,6 +15,8 @@ function OwnerMenu() {
     addMenuItem,
     removeMenuItem,
     updateMenuItem,
+    toggleMenuItemActive,
+    reorderMenuItems,
   } = useAuth();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(mySnackbar);
@@ -23,6 +25,20 @@ function OwnerMenu() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [itemDraft, setItemDraft] = useState({ name: "", description: "", price: "" });
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+
+  const filtered = useMemo(() => {
+    if (!mySnackbar) return [];
+    const q = search.trim().toLowerCase();
+    if (!q) return mySnackbar.menu_items;
+    return mySnackbar.menu_items.filter(
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        (m.description ?? "").toLowerCase().includes(q),
+    );
+  }, [mySnackbar, search]);
 
   if (!mySnackbar) {
     return (
@@ -52,6 +68,25 @@ function OwnerMenu() {
     setSaving(false);
     setEditingItemId(null);
   };
+
+  const handleDrop = async (targetId: string) => {
+    if (!dragId || dragId === targetId) {
+      setDragId(null);
+      setOverId(null);
+      return;
+    }
+    const ordered = [...mySnackbar.menu_items];
+    const from = ordered.findIndex((m) => m.id === dragId);
+    const to = ordered.findIndex((m) => m.id === targetId);
+    if (from < 0 || to < 0) return;
+    const [moved] = ordered.splice(from, 1);
+    ordered.splice(to, 0, moved);
+    setDragId(null);
+    setOverId(null);
+    await reorderMenuItems(ordered.map((m) => m.id));
+  };
+
+  const activeCount = mySnackbar.menu_items.filter((m) => m.is_active).length;
 
   return (
     <div className="pb-6">
@@ -111,17 +146,38 @@ function OwnerMenu() {
         </section>
 
         <section className="rounded-2xl bg-neutral-900 border border-neutral-800 p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">
-              Itens do menu ({mySnackbar.menu_items.length})
-            </h2>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-white">Itens do menu</h2>
+              <p className="text-[11px] text-neutral-500">
+                {mySnackbar.menu_items.length} total · {activeCount} ativos · arraste para reordenar
+              </p>
+            </div>
             <button
               onClick={() => setAdding(true)}
-              className="flex items-center gap-1 rounded-full bg-[#5d0a1a] px-3 py-1 text-xs font-semibold text-white hover:bg-[#6e0e22]"
+              className="flex shrink-0 items-center gap-1 rounded-full bg-[#5d0a1a] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#6e0e22]"
             >
-              <Plus size={12} /> Adicionar
+              <Plus size={12} /> Novo
             </button>
           </div>
+
+          <label className="mt-3 flex items-center gap-2 rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 focus-within:border-[#e85d75]">
+            <Search size={14} className="text-neutral-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar item…"
+              className="w-full bg-transparent text-sm text-white placeholder:text-neutral-600 focus:outline-none"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="text-neutral-500 hover:text-white"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </label>
 
           <ul className="mt-3 space-y-2">
             {mySnackbar.menu_items.length === 0 && (
@@ -129,7 +185,12 @@ function OwnerMenu() {
                 Nenhum item ainda. Comece adicionando o primeiro.
               </li>
             )}
-            {mySnackbar.menu_items.map((m) =>
+            {mySnackbar.menu_items.length > 0 && filtered.length === 0 && (
+              <li className="rounded-xl border border-dashed border-neutral-700 p-4 text-center text-xs text-neutral-500">
+                Nenhum item corresponde a "{search}".
+              </li>
+            )}
+            {filtered.map((m) =>
               editingItemId === m.id ? (
                 <li
                   key={m.id}
@@ -169,20 +230,57 @@ function OwnerMenu() {
               ) : (
                 <li
                   key={m.id}
-                  className="flex items-start justify-between gap-3 rounded-xl bg-neutral-950 border border-neutral-800 p-3"
+                  draggable={!search}
+                  onDragStart={() => setDragId(m.id)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (overId !== m.id) setOverId(m.id);
+                  }}
+                  onDragLeave={() => {
+                    if (overId === m.id) setOverId(null);
+                  }}
+                  onDrop={() => handleDrop(m.id)}
+                  onDragEnd={() => {
+                    setDragId(null);
+                    setOverId(null);
+                  }}
+                  className={`flex items-start gap-2 rounded-xl border bg-neutral-950 p-3 transition ${
+                    dragId === m.id ? "opacity-40" : ""
+                  } ${
+                    overId === m.id && dragId !== m.id
+                      ? "border-[#e85d75]"
+                      : "border-neutral-800"
+                  } ${!m.is_active ? "opacity-60" : ""}`}
                 >
+                  <span
+                    className={`mt-0.5 grid h-7 w-5 shrink-0 place-items-center text-neutral-600 ${
+                      search ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing hover:text-neutral-300"
+                    }`}
+                    title={search ? "Limpe a busca para reordenar" : "Arraste"}
+                  >
+                    <GripVertical size={14} />
+                  </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-white">{m.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="truncate text-sm font-semibold text-white">{m.name}</p>
+                      {!m.is_active && (
+                        <span className="rounded-full bg-neutral-800 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">
+                          Inativo
+                        </span>
+                      )}
+                    </div>
                     {m.description && (
-                      <p className="truncate text-xs text-neutral-400">
-                        {m.description}
-                      </p>
+                      <p className="truncate text-xs text-neutral-400">{m.description}</p>
                     )}
                     <p className="mt-1 text-xs font-bold text-[#e85d75]">
                       R$ {m.price.toFixed(2).replace(".", ",")}
                     </p>
                   </div>
-                  <div className="flex shrink-0 gap-1">
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Switch
+                      active={m.is_active}
+                      onClick={() => toggleMenuItemActive(m.id)}
+                    />
                     <button
                       onClick={() => startEditingItem(m)}
                       className="grid h-8 w-8 place-items-center rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
@@ -213,7 +311,7 @@ function OwnerMenu() {
           onClick={() => setAdding(false)}
         >
           <div
-            className="w-full max-w-md rounded-t-3xl bg-neutral-900 border border-neutral-800 p-5 sm:rounded-3xl"
+            className="w-full max-w-md rounded-t-3xl bg-neutral-900 border border-neutral-800 p-5 sm:rounded-3xl animate-in slide-in-from-bottom-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
@@ -261,6 +359,27 @@ function OwnerMenu() {
         </div>
       )}
     </div>
+  );
+}
+
+function Switch({ active, onClick }: { active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={active}
+      onClick={onClick}
+      title={active ? "Desativar item" : "Ativar item"}
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${
+        active ? "bg-[#5d0a1a]" : "bg-neutral-700"
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${
+          active ? "translate-x-4" : "translate-x-0.5"
+        }`}
+      />
+    </button>
   );
 }
 
