@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { OwnerBottomNav } from "@/components/OwnerBottomNav";
@@ -11,13 +11,9 @@ export const Route = createFileRoute("/_app")({
 function AppShell() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/" });
-    if (!loading && user?.role === "admin" && !location.pathname.startsWith("/admin")) {
-      navigate({ to: "/admin", replace: true });
-    }
   }, [user, loading, navigate]);
 
   if (loading) {
@@ -32,16 +28,15 @@ function AppShell() {
 
 
   const isOwner = user.role === "owner";
-  const isAdmin = user.role === "admin";
 
   return (
     <div
-      className={`mx-auto min-h-screen max-w-md ${isAdmin ? "" : "pb-20"} ${
-        isOwner || isAdmin ? "bg-neutral-950 text-neutral-100" : ""
+      className={`mx-auto min-h-screen max-w-md pb-20 ${
+        isOwner ? "bg-neutral-950 text-neutral-100" : ""
       }`}
     >
       <Outlet />
-      {isAdmin ? null : isOwner ? <OwnerBottomNav /> : <BottomNav />}
+      {isOwner ? <OwnerBottomNav /> : <BottomNav />}
     </div>
   );
 }

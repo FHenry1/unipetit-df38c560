@@ -21,7 +21,7 @@ import {
   User as UserIcon,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/lib/auth";
@@ -43,6 +43,7 @@ function ProfilePage() {
   const {
     user,
     logout,
+    becomeOwner,
     snackbars,
     orders,
     reviews,
@@ -51,6 +52,7 @@ function ProfilePage() {
     refresh,
   } = useAuth();
   const navigate = useNavigate();
+  const [loadingOwner, setLoadingOwner] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [repeating, setRepeating] = useState<string | null>(null);
   const [tab, setTab] = useState<"favorites" | "reviews" | "settings">("favorites");
@@ -60,10 +62,6 @@ function ProfilePage() {
     navigate({ to: "/owner/profile", replace: true });
     return null;
   }
-  if (user?.role === "admin") {
-    navigate({ to: "/admin", replace: true });
-    return null;
-  }
 
   if (!user) return null;
 
@@ -71,7 +69,16 @@ function ProfilePage() {
   const myReviews = reviews.filter((r) => r.user_id === user.id);
   const myOrders = orders.slice(0, 10);
 
-
+  const onBecomeOwner = async () => {
+    if (loadingOwner) return;
+    setLoadingOwner(true);
+    try {
+      await becomeOwner();
+      navigate({ to: "/owner/profile" });
+    } finally {
+      setLoadingOwner(false);
+    }
+  };
 
 
   const onRepeat = async (orderId: string, snackbarId: string) => {
@@ -350,8 +357,33 @@ function ProfilePage() {
             </div>
 
             {/* Modo proprietário */}
-            <OwnerApplicationCard userId={user.id} />
-
+            <div
+              className="relative overflow-hidden rounded-2xl p-5 text-white shadow-glow"
+              style={{ background: "linear-gradient(135deg,#7a1228 0%,#5d0a1a 55%,#3a0510 100%)" }}
+            >
+              <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+              <div className="relative">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15"><Store size={18} /></span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#3a0510]">
+                    <TrendingUp size={10} /> Novo
+                  </span>
+                </div>
+                <h3 className="mt-3 text-base font-extrabold">Deseja divulgar sua lanchonete?</h3>
+                <p className="mt-1 text-xs leading-relaxed text-white/85">
+                  Torne-se dono no UniPetit, cadastre seu menu e alcance novos clientes na universidade.
+                </p>
+                <button
+                  onClick={onBecomeOwner}
+                  disabled={loadingOwner}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#5d0a1a] transition active:scale-[0.98] disabled:opacity-70"
+                >
+                  {loadingOwner ? <Loader2 size={14} className="animate-spin" /> : <Store size={14} />}
+                  {loadingOwner ? "Ativando modo dono..." : "Tornar-se Dono de Lanchonete"}
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
           </section>
         )}
       </div>
@@ -519,108 +551,5 @@ function EmptyCard({
         </Link>
       )}
     </div>
-  );
-}
-
-function OwnerApplicationCard({ userId }: { userId: string }) {
-  const [status, setStatus] = useState<"loading" | "none" | "pending" | "rejected">("loading");
-  const [businessName, setBusinessName] = useState("");
-  const [notes, setNotes] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  const load = async () => {
-    const { data } = await supabase
-      .from("owner_applications")
-      .select("status")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (!data) setStatus("none");
-    else if (data.status === "pending") setStatus("pending");
-    else if (data.status === "rejected") setStatus("rejected");
-    else setStatus("none");
-  };
-
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [userId]);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!businessName.trim()) return;
-    setSaving(true);
-    setErr(null);
-    const { error } = await supabase
-      .from("owner_applications")
-      .upsert(
-        { user_id: userId, business_name: businessName.trim(), notes: notes.trim() || null, status: "pending" },
-        { onConflict: "user_id" },
-      );
-    setSaving(false);
-    if (error) setErr(error.message);
-    else { setStatus("pending"); setBusinessName(""); setNotes(""); }
-  };
-
-  if (status === "loading") {
-    return <div className="rounded-2xl bg-surface p-5 text-center text-xs text-muted-foreground">Carregando…</div>;
-  }
-
-  if (status === "pending") {
-    return (
-      <div className="rounded-2xl p-5 text-white shadow-glow" style={{ background: "linear-gradient(135deg,#7a1228 0%,#5d0a1a 55%,#3a0510 100%)" }}>
-        <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15"><Store size={18} /></span>
-          <span className="rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold uppercase text-[#3a0510]">Em análise</span>
-        </div>
-        <h3 className="mt-3 text-base font-extrabold">Solicitação enviada</h3>
-        <p className="mt-1 text-xs leading-relaxed text-white/85">
-          Sua solicitação para tornar-se dono está sendo analisada. Você receberá uma resposta em breve.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <form
-      onSubmit={submit}
-      className="relative overflow-hidden rounded-2xl p-5 text-white shadow-glow"
-      style={{ background: "linear-gradient(135deg,#7a1228 0%,#5d0a1a 55%,#3a0510 100%)" }}
-    >
-      <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-      <div className="relative space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15"><Store size={18} /></span>
-          <span className="rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold uppercase text-[#3a0510]"><TrendingUp size={10} className="inline" /> {status === "rejected" ? "Tentar novamente" : "Novo"}</span>
-        </div>
-        <h3 className="text-base font-extrabold">Torne-se dono de uma lanchonete</h3>
-        <p className="text-xs leading-relaxed text-white/85">
-          Preencha os dados abaixo. Sua solicitação será analisada por um administrador.
-        </p>
-        <input
-          value={businessName}
-          onChange={(e) => setBusinessName(e.target.value)}
-          maxLength={120}
-          required
-          placeholder="Nome do seu negócio"
-          className="w-full rounded-xl bg-white/10 border border-white/20 px-3 py-2.5 text-sm text-white placeholder:text-white/60 outline-none focus:border-white/60"
-        />
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          maxLength={500}
-          rows={3}
-          placeholder="Conte um pouco sobre sua lanchonete (opcional)"
-          className="w-full rounded-xl bg-white/10 border border-white/20 px-3 py-2.5 text-sm text-white placeholder:text-white/60 outline-none focus:border-white/60"
-        />
-        {err && <p className="text-xs font-semibold text-rose-200">{err}</p>}
-        <button
-          type="submit"
-          disabled={saving || !businessName.trim()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#5d0a1a] transition active:scale-[0.98] disabled:opacity-70"
-        >
-          {saving ? <Loader2 size={14} className="animate-spin" /> : <Store size={14} />}
-          {saving ? "Enviando..." : "Enviar solicitação"}
-          <ChevronRight size={16} />
-        </button>
-      </div>
-    </form>
   );
 }
