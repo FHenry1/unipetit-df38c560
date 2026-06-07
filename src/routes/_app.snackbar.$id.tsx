@@ -1,7 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Clock, Heart, MapPin, Star, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useAuth } from "@/lib/auth";
+import {
+  ArrowLeft,
+  Clock,
+  Heart,
+  MapPin,
+  Share2,
+  Star,
+  Trash2,
+  MessageCircle,
+  Navigation,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
+import { useAuth, type Review } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/snackbar/$id")({
   component: SnackBarDetail,
@@ -32,90 +45,121 @@ function SnackBarDetail() {
   }
 
   const isFav = user?.favorites.includes(s.id);
+  const activeMenu = s.menu_items.filter((m) => m.is_active !== false);
+
+  const onShare = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: s.name, text: s.description, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copiado");
+      }
+    } catch {
+      /* user cancel */
+    }
+  };
 
   return (
-    <div>
+    <div className="pb-10">
+      {/* Hero */}
       <div
-        className="relative h-56 w-full bg-cover bg-center"
+        className="relative h-64 w-full bg-cover bg-center"
         style={{ backgroundImage: `url(${s.cover})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <Link
-          to="/home"
-          className="absolute left-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-surface-foreground shadow"
-        >
-          <ArrowLeft size={16} />
-        </Link>
-        <button
-          onClick={() => toggleFavorite(s.id)}
-          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-surface-foreground shadow"
-        >
-          <Heart size={16} className={isFav ? "fill-current text-rose-500" : ""} />
-        </button>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-4">
+          <Link
+            to="/home"
+            className="grid h-10 w-10 place-items-center rounded-full bg-white/95 text-surface-foreground shadow-md backdrop-blur transition hover:scale-105 active:scale-95"
+            aria-label="Voltar"
+          >
+            <ArrowLeft size={16} />
+          </Link>
+          <div className="flex gap-2">
+            <button
+              onClick={onShare}
+              className="grid h-10 w-10 place-items-center rounded-full bg-white/95 text-surface-foreground shadow-md transition hover:scale-105 active:scale-95"
+              aria-label="Compartilhar"
+            >
+              <Share2 size={16} />
+            </button>
+            <button
+              onClick={() => toggleFavorite(s.id)}
+              className="grid h-10 w-10 place-items-center rounded-full bg-white/95 text-surface-foreground shadow-md transition hover:scale-105 active:scale-95"
+              aria-label="Favoritar"
+            >
+              <Heart
+                size={16}
+                className={
+                  isFav
+                    ? "scale-110 fill-current text-rose-500 transition-transform"
+                    : "transition-transform"
+                }
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Floating rating chip */}
+        <div className="absolute bottom-4 right-4 flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-surface-foreground shadow-lg">
+          <Star size={12} className="fill-amber-400 text-amber-400" />
+          {s.rating.toFixed(1)}
+          <span className="ml-1 font-normal text-muted-foreground">
+            ({snackReviews.length})
+          </span>
+        </div>
       </div>
 
       <div className="-mt-6 rounded-t-3xl bg-surface px-5 pb-6 pt-5 text-surface-foreground">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold">{s.name}</h1>
-            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin size={12} /> {s.location}
-            </p>
+        <h1 className="text-2xl font-extrabold tracking-tight">{s.name}</h1>
+        <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+          <MapPin size={12} /> {s.location}
+        </p>
+
+        {s.categories.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {s.categories.map((c) => (
+              <span
+                key={c}
+                className="rounded-full bg-brand-soft px-2.5 py-0.5 text-[11px] font-semibold text-brand"
+              >
+                {c}
+              </span>
+            ))}
           </div>
-          <div className="flex items-center gap-1 rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold">
-            <Star size={12} className="fill-current text-amber-500" />
-            {s.rating.toFixed(1)}
+        )}
+
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+          {s.description}
+        </p>
+
+        {/* Tabs */}
+        <div className="sticky top-0 z-10 -mx-5 mt-5 bg-surface px-5 pb-1 pt-2">
+          <div className="grid grid-cols-3 rounded-xl bg-muted p-1 text-xs font-semibold">
+            {(["menu", "reviews", "info"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`rounded-lg py-2 transition ${
+                  tab === t
+                    ? "bg-brand text-primary-foreground shadow"
+                    : "text-muted-foreground hover:text-surface-foreground"
+                }`}
+              >
+                {t === "menu"
+                  ? `Menu${activeMenu.length ? ` · ${activeMenu.length}` : ""}`
+                  : t === "reviews"
+                    ? `Avaliações${snackReviews.length ? ` · ${snackReviews.length}` : ""}`
+                    : "Info"}
+              </button>
+            ))}
           </div>
         </div>
 
-        <p className="mt-3 text-sm text-muted-foreground">{s.description}</p>
-
-        <div className="mt-5 grid grid-cols-3 rounded-xl bg-muted p-1 text-xs font-semibold">
-          {(["menu", "reviews", "info"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`rounded-lg py-2 transition ${
-                tab === t
-                  ? "bg-brand text-primary-foreground shadow"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {t === "menu"
-                ? "Menu"
-                : t === "reviews"
-                  ? `Avaliações${snackReviews.length ? ` (${snackReviews.length})` : ""}`
-                  : "Info"}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-5">
-          {tab === "menu" && (
-            <ul className="space-y-3">
-              {s.menu_items.length === 0 && (
-                <li className="text-sm text-muted-foreground">
-                  Menu ainda não cadastrado.
-                </li>
-              )}
-              {s.menu_items.map((m) => (
-                <li
-                  key={m.id}
-                  className="flex items-start justify-between gap-3 rounded-xl border border-border p-3"
-                >
-                  <div>
-                    <p className="text-sm font-semibold">{m.name}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {m.description}
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-brand-soft px-3 py-1 text-xs font-bold">
-                    R$ {m.price.toFixed(2)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="mt-5 animate-fade-in" key={tab}>
+          {tab === "menu" && <MenuList items={activeMenu} />}
           {tab === "reviews" && (
             <ReviewsTab
               snackbarId={s.id}
@@ -126,22 +170,49 @@ function SnackBarDetail() {
               deleteReview={deleteReview}
             />
           )}
-          {tab === "info" && (
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p className="flex items-center gap-2">
-                <Clock size={14} /> Seg–Sáb: 11h às 23h
-              </p>
-              <p className="flex items-center gap-2">
-                <MapPin size={14} /> {s.location}
-              </p>
-              <p>Categorias: {s.categories.join(", ") || "—"}</p>
-            </div>
-          )}
+          {tab === "info" && <InfoTab snackbar={s} />}
         </div>
       </div>
     </div>
   );
 }
+
+/* ---------------- MENU ---------------- */
+
+function MenuList({ items }: { items: ReturnType<typeof useAuth>["snackbars"][number]["menu_items"] }) {
+  if (items.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        Menu ainda não cadastrado.
+      </p>
+    );
+  }
+  return (
+    <ul className="space-y-3">
+      {items.map((m, i) => (
+        <li
+          key={m.id}
+          className="group flex items-start justify-between gap-3 rounded-xl border border-border bg-background p-3.5 transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
+          style={{ animation: `fade-in 0.3s ease-out ${i * 0.04}s both` }}
+        >
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{m.name}</p>
+            {m.description && (
+              <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                {m.description}
+              </p>
+            )}
+          </div>
+          <span className="shrink-0 rounded-full bg-brand-soft px-3 py-1.5 text-sm font-extrabold text-brand">
+            R$ {m.price.toFixed(2).replace(".", ",")}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/* ---------------- REVIEWS ---------------- */
 
 function ReviewsTab({
   snackbarId,
@@ -152,8 +223,8 @@ function ReviewsTab({
   deleteReview,
 }: {
   snackbarId: string;
-  reviews: ReturnType<typeof useAuth>["reviews"];
-  myReview?: ReturnType<typeof useAuth>["reviews"][number];
+  reviews: Review[];
+  myReview?: Review;
   canReview: boolean;
   upsertReview: ReturnType<typeof useAuth>["upsertReview"];
   deleteReview: ReturnType<typeof useAuth>["deleteReview"];
@@ -163,6 +234,31 @@ function ReviewsTab({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(!myReview);
+
+  useEffect(() => {
+    setRating(myReview?.rating ?? 0);
+    setComment(myReview?.comment ?? "");
+    setEditing(!myReview);
+  }, [myReview?.id]);
+
+  const distribution = useMemo(() => {
+    const buckets = [0, 0, 0, 0, 0]; // index 0 = 1 star
+    reviews.forEach((r) => {
+      if (r.rating >= 1 && r.rating <= 5) buckets[r.rating - 1] += 1;
+    });
+    const total = reviews.length || 1;
+    return buckets.map((count, i) => ({
+      stars: i + 1,
+      count,
+      pct: (count / total) * 100,
+    })).reverse();
+  }, [reviews]);
+
+  const avg = reviews.length
+    ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length
+    : 0;
+
+  const otherReviews = reviews.filter((r) => r.id !== myReview?.id);
 
   const onSubmit = async () => {
     setError(null);
@@ -177,14 +273,52 @@ function ReviewsTab({
       setError(res.error ?? "Não foi possível salvar.");
       return;
     }
+    toast.success("Avaliação publicada");
     setEditing(false);
   };
 
   return (
-    <div className="space-y-4">
-      {canReview && (
+    <div className="space-y-5">
+      {/* Summary */}
+      {reviews.length > 0 && (
         <div className="rounded-2xl border border-border bg-muted/30 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="flex items-center gap-4">
+            <div className="text-center">
+              <p className="text-3xl font-extrabold text-surface-foreground">
+                {avg.toFixed(1)}
+              </p>
+              <StarRow rating={Math.round(avg)} size={12} />
+              <p className="mt-0.5 text-[10px] text-muted-foreground">
+                {reviews.length} avaliação{reviews.length > 1 ? "es" : ""}
+              </p>
+            </div>
+            <div className="flex-1 space-y-1">
+              {distribution.map((d) => (
+                <div key={d.stars} className="flex items-center gap-2">
+                  <span className="w-3 text-[10px] font-semibold text-muted-foreground">
+                    {d.stars}
+                  </span>
+                  <Star size={10} className="fill-amber-400 text-amber-400" />
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-amber-400 transition-all"
+                      style={{ width: `${d.pct}%` }}
+                    />
+                  </div>
+                  <span className="w-5 text-right text-[10px] text-muted-foreground">
+                    {d.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* My review form */}
+      {canReview && (
+        <div className="rounded-2xl border border-brand/20 bg-brand-soft/40 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand">
             {myReview ? "Sua avaliação" : "Avaliar essa lanchonete"}
           </p>
 
@@ -192,20 +326,27 @@ function ReviewsTab({
             <div className="mt-2">
               <StarRow rating={myReview.rating} size={18} />
               {myReview.comment && (
-                <p className="mt-2 text-sm text-surface-foreground">
-                  {myReview.comment}
-                </p>
+                <p className="mt-2 text-sm text-surface-foreground">{myReview.comment}</p>
+              )}
+              {myReview.owner_reply && (
+                <OwnerReplyBlock
+                  reply={myReview.owner_reply}
+                  at={myReview.owner_reply_at}
+                />
               )}
               <div className="mt-3 flex gap-2">
                 <button
                   onClick={() => setEditing(true)}
-                  className="flex-1 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-primary-foreground"
+                  className="flex-1 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-primary-foreground transition hover:opacity-90 active:scale-95"
                 >
                   Editar
                 </button>
                 <button
-                  onClick={() => deleteReview(myReview.id)}
-                  className="grid h-9 w-9 place-items-center rounded-lg border border-border text-muted-foreground hover:text-rose-500"
+                  onClick={async () => {
+                    await deleteReview(myReview.id);
+                    toast.success("Avaliação removida");
+                  }}
+                  className="grid h-9 w-9 place-items-center rounded-lg border border-border text-muted-foreground transition hover:border-rose-500 hover:text-rose-500"
                   aria-label="Excluir avaliação"
                 >
                   <Trash2 size={14} />
@@ -221,9 +362,11 @@ function ReviewsTab({
                 maxLength={500}
                 rows={3}
                 placeholder="Conte como foi sua experiência (opcional)"
-                className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+                className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
               />
-              {error && <p className="text-xs text-rose-500">{error}</p>}
+              {error && (
+                <p className="animate-fade-in text-xs text-rose-500">{error}</p>
+              )}
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] text-muted-foreground">
                   {comment.length}/500
@@ -245,7 +388,7 @@ function ReviewsTab({
                   <button
                     onClick={onSubmit}
                     disabled={saving}
-                    className="rounded-lg bg-brand px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-70"
+                    className="rounded-lg bg-brand px-4 py-2 text-xs font-bold text-primary-foreground transition hover:opacity-90 active:scale-95 disabled:opacity-70"
                   >
                     {saving ? "Salvando..." : myReview ? "Atualizar" : "Publicar"}
                   </button>
@@ -256,21 +399,20 @@ function ReviewsTab({
         </div>
       )}
 
-      {reviews.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+      {/* List */}
+      {otherReviews.length === 0 && !myReview ? (
+        <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Nenhuma avaliação ainda. Seja o primeiro!
         </p>
       ) : (
         <ul className="space-y-3">
-          {reviews.map((r) => (
-            <li key={r.id} className="rounded-xl border border-border p-3">
-              <div className="flex items-center justify-between">
-                <strong className="text-sm">{r.user_name}</strong>
-                <StarRow rating={r.rating} size={12} />
-              </div>
-              {r.comment && (
-                <p className="mt-1 text-xs text-muted-foreground">{r.comment}</p>
-              )}
+          {otherReviews.map((r, i) => (
+            <li
+              key={r.id}
+              className="rounded-xl border border-border bg-background p-3.5"
+              style={{ animation: `fade-in 0.3s ease-out ${i * 0.04}s both` }}
+            >
+              <ReviewCard review={r} />
             </li>
           ))}
         </ul>
@@ -279,6 +421,140 @@ function ReviewsTab({
   );
 }
 
+function ReviewCard({ review }: { review: Review }) {
+  const [expanded, setExpanded] = useState(false);
+  const long = review.comment.length > 180;
+  const shown = expanded || !long ? review.comment : review.comment.slice(0, 180) + "…";
+  const when = review.created_at
+    ? formatDistanceToNow(new Date(review.created_at), {
+        addSuffix: true,
+        locale: ptBR,
+      })
+    : "";
+  const initial = (review.user_name || "?").trim().charAt(0).toUpperCase();
+
+  return (
+    <div>
+      <div className="flex items-center gap-2.5">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand text-sm font-bold text-primary-foreground">
+          {initial}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold">{review.user_name}</p>
+          <p className="text-[10px] text-muted-foreground">{when}</p>
+        </div>
+        <StarRow rating={review.rating} size={12} />
+      </div>
+      {review.comment && (
+        <p className="mt-2 text-sm text-surface-foreground">
+          {shown}{" "}
+          {long && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="text-xs font-semibold text-brand hover:underline"
+            >
+              {expanded ? "ver menos" : "leia mais"}
+            </button>
+          )}
+        </p>
+      )}
+      {review.owner_reply && (
+        <OwnerReplyBlock reply={review.owner_reply} at={review.owner_reply_at} />
+      )}
+    </div>
+  );
+}
+
+function OwnerReplyBlock({ reply, at }: { reply: string; at: string | null }) {
+  const when = at
+    ? formatDistanceToNow(new Date(at), { addSuffix: true, locale: ptBR })
+    : "";
+  return (
+    <div className="mt-3 rounded-lg border-l-2 border-brand bg-brand-soft/60 p-3">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-brand">
+        <MessageCircle size={10} /> Resposta do dono
+        {when && (
+          <span className="ml-auto font-normal text-muted-foreground">{when}</span>
+        )}
+      </p>
+      <p className="mt-1 text-sm text-surface-foreground">{reply}</p>
+    </div>
+  );
+}
+
+/* ---------------- INFO ---------------- */
+
+function InfoTab({ snackbar }: { snackbar: ReturnType<typeof useAuth>["snackbars"][number] }) {
+  const mapsHref =
+    snackbar.lat != null && snackbar.lng != null
+      ? `https://www.google.com/maps/search/?api=1&query=${snackbar.lat},${snackbar.lng}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(snackbar.location)}`;
+
+  const hours = [
+    { d: "Segunda – Sexta", h: "11h – 23h" },
+    { d: "Sábado", h: "11h – 00h" },
+    { d: "Domingo", h: "12h – 22h" },
+  ];
+
+  return (
+    <div className="space-y-4 text-sm">
+      <a
+        href={mapsHref}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center gap-3 rounded-xl border border-border bg-background p-3.5 transition hover:border-brand/40 hover:shadow-sm"
+      >
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-soft text-brand">
+          <Navigation size={16} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Endereço
+          </p>
+          <p className="truncate font-medium text-surface-foreground">
+            {snackbar.location}
+          </p>
+        </div>
+        <span className="text-xs font-semibold text-brand">Abrir</span>
+      </a>
+
+      <div className="rounded-xl border border-border bg-background p-3.5">
+        <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <Clock size={12} /> Horário de funcionamento
+        </p>
+        <ul className="mt-2 divide-y divide-border text-sm">
+          {hours.map((h) => (
+            <li key={h.d} className="flex items-center justify-between py-2">
+              <span className="text-surface-foreground">{h.d}</span>
+              <span className="font-semibold text-muted-foreground">{h.h}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {snackbar.categories.length > 0 && (
+        <div className="rounded-xl border border-border bg-background p-3.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Categorias
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {snackbar.categories.map((c) => (
+              <span
+                key={c}
+                className="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Stars ---------------- */
+
 function StarPicker({
   value,
   onChange,
@@ -286,19 +562,23 @@ function StarPicker({
   value: number;
   onChange: (n: number) => void;
 }) {
+  const [hover, setHover] = useState(0);
+  const display = hover || value;
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-1" onMouseLeave={() => setHover(0)}>
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
           type="button"
+          onMouseEnter={() => setHover(n)}
           onClick={() => onChange(n)}
+          className="transition hover:scale-110 active:scale-95"
           aria-label={`${n} estrela${n > 1 ? "s" : ""}`}
         >
           <Star
-            size={26}
+            size={28}
             className={
-              n <= value
+              n <= display
                 ? "fill-amber-400 text-amber-400"
                 : "text-muted-foreground/40"
             }
