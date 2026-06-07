@@ -316,34 +316,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const becomeOwner = async () => {
     if (!user) return;
-    await supabase
-      .from("user_roles")
-      .upsert({ user_id: user.id, role: "owner" }, { onConflict: "user_id,role" });
-    // Ensure a snackbar exists for this owner
-    const { data: existing } = await supabase
-      .from("snackbars")
-      .select("id")
-      .eq("owner_id", user.id)
-      .maybeSingle();
-    if (!existing) {
-      await supabase.from("snackbars").insert({
-        owner_id: user.id,
-        name: "Minha Lanchonete",
-        description: "Adicione uma descrição da sua lanchonete.",
-        location: "Endereço a definir",
-        cover: FALLBACK_COVER,
-      });
-    }
+    const { error } = await supabase.rpc("become_owner");
+    if (error) throw error;
     await refresh();
   };
 
   const exitOwnerMode = async () => {
     if (!user) return;
-    await supabase
-      .from("user_roles")
-      .delete()
-      .eq("user_id", user.id)
-      .eq("role", "owner");
+    const { error } = await supabase.rpc("exit_owner_mode");
+    if (error) throw error;
     await refresh();
   };
 

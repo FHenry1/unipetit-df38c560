@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ChevronRight,
-  DoorOpen,
+  
   Heart,
   KeyRound,
   Loader2,
@@ -44,7 +44,6 @@ function ProfilePage() {
     user,
     logout,
     becomeOwner,
-    exitOwnerMode,
     snackbars,
     orders,
     reviews,
@@ -54,10 +53,15 @@ function ProfilePage() {
   } = useAuth();
   const navigate = useNavigate();
   const [loadingOwner, setLoadingOwner] = useState(false);
-  const [exitingOwner, setExitingOwner] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [repeating, setRepeating] = useState<string | null>(null);
   const [tab, setTab] = useState<"favorites" | "reviews" | "settings">("favorites");
+
+  // Owners têm um perfil dedicado em /owner/profile
+  if (user?.role === "owner") {
+    navigate({ to: "/owner/profile", replace: true });
+    return null;
+  }
 
   if (!user) return null;
 
@@ -70,23 +74,12 @@ function ProfilePage() {
     setLoadingOwner(true);
     try {
       await becomeOwner();
-      navigate({ to: "/owner" });
+      navigate({ to: "/owner/profile" });
     } finally {
       setLoadingOwner(false);
     }
   };
 
-  const onExitOwner = async () => {
-    if (exitingOwner) return;
-    if (!window.confirm("Deseja voltar ao modo consumidor? Sua lanchonete continua salva.")) return;
-    setExitingOwner(true);
-    try {
-      await exitOwnerMode();
-      setTab("favorites");
-    } finally {
-      setExitingOwner(false);
-    }
-  };
 
   const onRepeat = async (orderId: string, snackbarId: string) => {
     setRepeating(orderId);
@@ -150,7 +143,7 @@ function ProfilePage() {
           <p className="mt-0.5 text-xs text-white/70">{user.email}</p>
           <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur">
             <Sparkles size={12} />
-            {user.role === "owner" ? "Proprietário" : "Consumidor"}
+            Consumidor
           </span>
         </div>
 
@@ -364,58 +357,33 @@ function ProfilePage() {
             </div>
 
             {/* Modo proprietário */}
-            {user.role === "user" ? (
-              <div
-                className="relative overflow-hidden rounded-2xl p-5 text-white shadow-glow"
-                style={{ background: "linear-gradient(135deg,#7a1228 0%,#5d0a1a 55%,#3a0510 100%)" }}
-              >
-                <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-                <div className="relative">
-                  <div className="flex items-center gap-2">
-                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15"><Store size={18} /></span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#3a0510]">
-                      <TrendingUp size={10} /> Novo
-                    </span>
-                  </div>
-                  <h3 className="mt-3 text-base font-extrabold">Deseja divulgar sua lanchonete?</h3>
-                  <p className="mt-1 text-xs leading-relaxed text-white/85">
-                    Torne-se dono no UniPetit, cadastre seu menu e alcance novos clientes na universidade.
-                  </p>
-                  <button
-                    onClick={onBecomeOwner}
-                    disabled={loadingOwner}
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#5d0a1a] transition active:scale-[0.98] disabled:opacity-70"
-                  >
-                    {loadingOwner ? <Loader2 size={14} className="animate-spin" /> : <Store size={14} />}
-                    {loadingOwner ? "Ativando modo dono..." : "Tornar-se Dono de Lanchonete"}
-                    <ChevronRight size={16} />
-                  </button>
+            <div
+              className="relative overflow-hidden rounded-2xl p-5 text-white shadow-glow"
+              style={{ background: "linear-gradient(135deg,#7a1228 0%,#5d0a1a 55%,#3a0510 100%)" }}
+            >
+              <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+              <div className="relative">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15"><Store size={18} /></span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#3a0510]">
+                    <TrendingUp size={10} /> Novo
+                  </span>
                 </div>
-              </div>
-            ) : (
-              <div className="overflow-hidden rounded-2xl bg-surface text-surface-foreground shadow-card">
-                <Link to="/owner" className="flex items-center justify-between border-b border-border px-4 py-3.5 hover:bg-muted/40">
-                  <span className="flex items-center gap-3 text-sm font-medium">
-                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-soft text-brand"><Store size={16} /></span>
-                    Painel do proprietário
-                  </span>
-                  <ChevronRight size={16} className="text-muted-foreground" />
-                </Link>
+                <h3 className="mt-3 text-base font-extrabold">Deseja divulgar sua lanchonete?</h3>
+                <p className="mt-1 text-xs leading-relaxed text-white/85">
+                  Torne-se dono no UniPetit, cadastre seu menu e alcance novos clientes na universidade.
+                </p>
                 <button
-                  onClick={onExitOwner}
-                  disabled={exitingOwner}
-                  className="flex w-full items-center justify-between px-4 py-3.5 text-left hover:bg-muted/40 disabled:opacity-60"
+                  onClick={onBecomeOwner}
+                  disabled={loadingOwner}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#5d0a1a] transition active:scale-[0.98] disabled:opacity-70"
                 >
-                  <span className="flex items-center gap-3 text-sm font-medium text-amber-700">
-                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-amber-100 text-amber-700">
-                      {exitingOwner ? <Loader2 size={16} className="animate-spin" /> : <DoorOpen size={16} />}
-                    </span>
-                    Voltar ao modo consumidor
-                  </span>
-                  <ChevronRight size={16} className="text-muted-foreground" />
+                  {loadingOwner ? <Loader2 size={14} className="animate-spin" /> : <Store size={14} />}
+                  {loadingOwner ? "Ativando modo dono..." : "Tornar-se Dono de Lanchonete"}
+                  <ChevronRight size={16} />
                 </button>
               </div>
-            )}
+            </div>
           </section>
         )}
       </div>
