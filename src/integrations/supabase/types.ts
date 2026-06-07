@@ -238,6 +238,13 @@ export type Database = {
             referencedRelation: "snackbars"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reviews_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       snackbars: {
