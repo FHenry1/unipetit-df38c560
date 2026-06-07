@@ -8,6 +8,9 @@ export const Route = createFileRoute("/_app/owner/menu")({
   component: OwnerMenu,
 });
 
+type ItemDraft = { name: string; description: string; price: string };
+const emptyDraft: ItemDraft = { name: "", description: "", price: "" };
+
 function OwnerMenu() {
   const {
     mySnackbar,
@@ -18,12 +21,12 @@ function OwnerMenu() {
     toggleMenuItemActive,
     reorderMenuItems,
   } = useAuth();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(mySnackbar);
-  const [adding, setAdding] = useState(false);
-  const [newItem, setNewItem] = useState({ name: "", description: "", price: "" });
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [itemDraft, setItemDraft] = useState({ name: "", description: "", price: "" });
+  const [editingInfo, setEditingInfo] = useState(false);
+  const [infoDraft, setInfoDraft] = useState(mySnackbar);
+  const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
+  const [modalItemId, setModalItemId] = useState<string | null>(null);
+  const [itemDraft, setItemDraft] = useState<ItemDraft>(emptyDraft);
+  const [deleteTarget, setDeleteTarget] = useState<MenuItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
@@ -48,25 +51,54 @@ function OwnerMenu() {
     );
   }
 
-  const startEditingItem = (m: MenuItem) => {
-    setEditingItemId(m.id);
+  const openAdd = () => {
+    setItemDraft(emptyDraft);
+    setModalItemId(null);
+    setModalMode("add");
+  };
+
+  const openEdit = (m: MenuItem) => {
     setItemDraft({
       name: m.name,
       description: m.description ?? "",
       price: m.price.toFixed(2).replace(".", ","),
     });
+    setModalItemId(m.id);
+    setModalMode("edit");
   };
 
-  const saveItem = async () => {
-    if (!editingItemId || !itemDraft.name.trim()) return;
-    setSaving(true);
-    await updateMenuItem(editingItemId, {
+  const closeModal = () => {
+    setModalMode(null);
+    setModalItemId(null);
+    setItemDraft(emptyDraft);
+  };
+
+  const submitItem = async () => {
+    if (!itemDraft.name.trim()) return;
+    const payload = {
       name: itemDraft.name.trim(),
       description: itemDraft.description.trim(),
       price: parseFloat(itemDraft.price.replace(",", ".")) || 0,
-    });
-    setSaving(false);
-    setEditingItemId(null);
+    };
+    setSaving(true);
+    try {
+      if (modalMode === "add") await addMenuItem(payload);
+      else if (modalMode === "edit" && modalItemId) await updateMenuItem(modalItemId, payload);
+      closeModal();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setSaving(true);
+    try {
+      await removeMenuItem(deleteTarget.id);
+      setDeleteTarget(null);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDrop = async (targetId: string) => {
@@ -100,16 +132,16 @@ function OwnerMenu() {
             </h2>
             <button
               onClick={() => {
-                setDraft(mySnackbar);
-                setEditing((v) => !v);
+                setInfoDraft(mySnackbar);
+                setEditingInfo((v) => !v);
               }}
               className="flex items-center gap-1 text-xs font-semibold text-[#e85d75]"
             >
-              <Pencil size={12} /> {editing ? "Cancelar" : "Editar"}
+              <Pencil size={12} /> {editingInfo ? "Cancelar" : "Editar"}
             </button>
           </div>
 
-          {!editing ? (
+          {!editingInfo ? (
             <dl className="mt-3 space-y-2 text-sm text-neutral-300">
               <Field label="Nome" value={mySnackbar.name} />
               <Field label="Descrição" value={mySnackbar.description} />
@@ -119,23 +151,23 @@ function OwnerMenu() {
             <div className="mt-3 space-y-3">
               <Input
                 label="Nome"
-                value={draft?.name ?? ""}
-                onChange={(v) => setDraft((d) => d && { ...d, name: v })}
+                value={infoDraft?.name ?? ""}
+                onChange={(v) => setInfoDraft((d) => d && { ...d, name: v })}
               />
               <Input
                 label="Descrição"
-                value={draft?.description ?? ""}
-                onChange={(v) => setDraft((d) => d && { ...d, description: v })}
+                value={infoDraft?.description ?? ""}
+                onChange={(v) => setInfoDraft((d) => d && { ...d, description: v })}
               />
               <Input
                 label="Endereço"
-                value={draft?.location ?? ""}
-                onChange={(v) => setDraft((d) => d && { ...d, location: v })}
+                value={infoDraft?.location ?? ""}
+                onChange={(v) => setInfoDraft((d) => d && { ...d, location: v })}
               />
               <button
                 onClick={async () => {
-                  if (draft) await updateMySnackbar(draft);
-                  setEditing(false);
+                  if (infoDraft) await updateMySnackbar(infoDraft);
+                  setEditingInfo(false);
                 }}
                 className="w-full rounded-xl bg-[#5d0a1a] px-4 py-2.5 text-sm font-semibold text-white"
               >
@@ -154,7 +186,7 @@ function OwnerMenu() {
               </p>
             </div>
             <button
-              onClick={() => setAdding(true)}
+              onClick={openAdd}
               className="flex shrink-0 items-center gap-1 rounded-full bg-[#5d0a1a] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#6e0e22]"
             >
               <Plus size={12} /> Novo
@@ -190,174 +222,179 @@ function OwnerMenu() {
                 Nenhum item corresponde a "{search}".
               </li>
             )}
-            {filtered.map((m) =>
-              editingItemId === m.id ? (
-                <li
-                  key={m.id}
-                  className="rounded-xl bg-neutral-950 border border-[#5d0a1a] p-3 space-y-2"
+            {filtered.map((m) => (
+              <li
+                key={m.id}
+                draggable={!search}
+                onDragStart={() => setDragId(m.id)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (overId !== m.id) setOverId(m.id);
+                }}
+                onDragLeave={() => {
+                  if (overId === m.id) setOverId(null);
+                }}
+                onDrop={() => handleDrop(m.id)}
+                onDragEnd={() => {
+                  setDragId(null);
+                  setOverId(null);
+                }}
+                className={`flex items-start gap-2 rounded-xl border bg-neutral-950 p-3 transition ${
+                  dragId === m.id ? "opacity-40" : ""
+                } ${
+                  overId === m.id && dragId !== m.id
+                    ? "border-[#e85d75]"
+                    : "border-neutral-800"
+                } ${!m.is_active ? "opacity-60" : ""}`}
+              >
+                <span
+                  className={`mt-0.5 grid h-7 w-5 shrink-0 place-items-center text-neutral-600 ${
+                    search ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing hover:text-neutral-300"
+                  }`}
+                  title={search ? "Limpe a busca para reordenar" : "Arraste"}
                 >
-                  <Input
-                    label="Nome"
-                    value={itemDraft.name}
-                    onChange={(v) => setItemDraft({ ...itemDraft, name: v })}
-                  />
-                  <Input
-                    label="Descrição"
-                    value={itemDraft.description}
-                    onChange={(v) => setItemDraft({ ...itemDraft, description: v })}
-                  />
-                  <Input
-                    label="Preço (R$)"
-                    value={itemDraft.price}
-                    onChange={(v) => setItemDraft({ ...itemDraft, price: v })}
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={saveItem}
-                      disabled={saving || !itemDraft.name.trim()}
-                      className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-[#5d0a1a] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                    >
-                      <Check size={12} /> Salvar
-                    </button>
-                    <button
-                      onClick={() => setEditingItemId(null)}
-                      className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-neutral-700 px-3 py-2 text-xs font-semibold text-neutral-300"
-                    >
-                      <X size={12} /> Cancelar
-                    </button>
-                  </div>
-                </li>
-              ) : (
-                <li
-                  key={m.id}
-                  draggable={!search}
-                  onDragStart={() => setDragId(m.id)}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    if (overId !== m.id) setOverId(m.id);
-                  }}
-                  onDragLeave={() => {
-                    if (overId === m.id) setOverId(null);
-                  }}
-                  onDrop={() => handleDrop(m.id)}
-                  onDragEnd={() => {
-                    setDragId(null);
-                    setOverId(null);
-                  }}
-                  className={`flex items-start gap-2 rounded-xl border bg-neutral-950 p-3 transition ${
-                    dragId === m.id ? "opacity-40" : ""
-                  } ${
-                    overId === m.id && dragId !== m.id
-                      ? "border-[#e85d75]"
-                      : "border-neutral-800"
-                  } ${!m.is_active ? "opacity-60" : ""}`}
-                >
-                  <span
-                    className={`mt-0.5 grid h-7 w-5 shrink-0 place-items-center text-neutral-600 ${
-                      search ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing hover:text-neutral-300"
-                    }`}
-                    title={search ? "Limpe a busca para reordenar" : "Arraste"}
-                  >
-                    <GripVertical size={14} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <p className="truncate text-sm font-semibold text-white">{m.name}</p>
-                      {!m.is_active && (
-                        <span className="rounded-full bg-neutral-800 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">
-                          Inativo
-                        </span>
-                      )}
-                    </div>
-                    {m.description && (
-                      <p className="truncate text-xs text-neutral-400">{m.description}</p>
+                  <GripVertical size={14} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-sm font-semibold text-white">{m.name}</p>
+                    {!m.is_active && (
+                      <span className="rounded-full bg-neutral-800 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">
+                        Inativo
+                      </span>
                     )}
-                    <p className="mt-1 text-xs font-bold text-[#e85d75]">
-                      R$ {m.price.toFixed(2).replace(".", ",")}
-                    </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Switch
-                      active={m.is_active}
-                      onClick={() => toggleMenuItemActive(m.id)}
-                    />
-                    <button
-                      onClick={() => startEditingItem(m)}
-                      className="grid h-8 w-8 place-items-center rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
-                      aria-label="Editar"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Remover "${m.name}"?`)) removeMenuItem(m.id);
-                      }}
-                      className="grid h-8 w-8 place-items-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
-                      aria-label="Remover"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </li>
-              ),
-            )}
+                  {m.description && (
+                    <p className="truncate text-xs text-neutral-400">{m.description}</p>
+                  )}
+                  <p className="mt-1 text-xs font-bold text-[#e85d75]">
+                    R$ {m.price.toFixed(2).replace(".", ",")}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Switch
+                    active={m.is_active}
+                    onClick={() => toggleMenuItemActive(m.id)}
+                  />
+                  <button
+                    onClick={() => openEdit(m)}
+                    className="grid h-8 w-8 place-items-center rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                    aria-label="Editar"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(m)}
+                    className="grid h-8 w-8 place-items-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                    aria-label="Remover"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </li>
+            ))}
           </ul>
         </section>
       </div>
 
-      {adding && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-end bg-black/60 sm:place-items-center sm:p-6"
-          onClick={() => setAdding(false)}
+      {modalMode && (
+        <Modal
+          title={modalMode === "add" ? "Novo item" : "Editar item"}
+          onClose={closeModal}
         >
-          <div
-            className="w-full max-w-md rounded-t-3xl bg-neutral-900 border border-neutral-800 p-5 sm:rounded-3xl animate-in slide-in-from-bottom-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-white">Novo item</h3>
+          <div className="space-y-3">
+            <Input
+              label="Nome"
+              value={itemDraft.name}
+              onChange={(v) => setItemDraft({ ...itemDraft, name: v })}
+            />
+            <Input
+              label="Descrição"
+              value={itemDraft.description}
+              onChange={(v) => setItemDraft({ ...itemDraft, description: v })}
+            />
+            <Input
+              label="Preço (R$)"
+              value={itemDraft.price}
+              onChange={(v) => setItemDraft({ ...itemDraft, price: v })}
+            />
+            <div className="flex gap-2 pt-1">
               <button
-                onClick={() => setAdding(false)}
-                className="text-neutral-400 hover:text-white"
+                onClick={closeModal}
+                className="flex-1 rounded-xl border border-neutral-700 px-4 py-2.5 text-sm font-semibold text-neutral-300"
               >
-                <X size={18} />
+                Cancelar
               </button>
-            </div>
-            <div className="space-y-3">
-              <Input
-                label="Nome"
-                value={newItem.name}
-                onChange={(v) => setNewItem({ ...newItem, name: v })}
-              />
-              <Input
-                label="Descrição"
-                value={newItem.description}
-                onChange={(v) => setNewItem({ ...newItem, description: v })}
-              />
-              <Input
-                label="Preço (R$)"
-                value={newItem.price}
-                onChange={(v) => setNewItem({ ...newItem, price: v })}
-              />
               <button
-                onClick={async () => {
-                  if (!newItem.name.trim()) return;
-                  await addMenuItem({
-                    name: newItem.name.trim(),
-                    description: newItem.description.trim(),
-                    price: parseFloat(newItem.price.replace(",", ".")) || 0,
-                  });
-                  setNewItem({ name: "", description: "", price: "" });
-                  setAdding(false);
-                }}
-                className="w-full rounded-xl bg-[#5d0a1a] px-4 py-2.5 text-sm font-semibold text-white"
+                onClick={submitItem}
+                disabled={saving || !itemDraft.name.trim()}
+                className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-[#5d0a1a] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
               >
-                Adicionar ao menu
+                <Check size={14} />
+                {modalMode === "add" ? "Adicionar" : "Salvar"}
               </button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
+
+      {deleteTarget && (
+        <Modal title="Remover item" onClose={() => setDeleteTarget(null)}>
+          <p className="text-sm text-neutral-300">
+            Tem certeza que deseja remover{" "}
+            <strong className="text-white">"{deleteTarget.name}"</strong> do
+            cardápio? Esta ação não pode ser desfeita.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => setDeleteTarget(null)}
+              className="flex-1 rounded-xl border border-neutral-700 px-4 py-2.5 text-sm font-semibold text-neutral-300"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmDelete}
+              disabled={saving}
+              className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              <Trash2 size={14} /> Remover
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-end bg-black/60 sm:place-items-center sm:p-6"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-t-3xl bg-neutral-900 border border-neutral-800 p-5 sm:rounded-3xl animate-in slide-in-from-bottom-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-white">{title}</h3>
+          <button
+            onClick={onClose}
+            className="text-neutral-400 hover:text-white"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }
