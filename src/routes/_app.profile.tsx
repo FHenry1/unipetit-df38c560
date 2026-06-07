@@ -59,6 +59,12 @@ function ProfilePage() {
   const [repeating, setRepeating] = useState<string | null>(null);
   const [tab, setTab] = useState<"favorites" | "reviews" | "settings">("favorites");
 
+  // Owners têm um perfil dedicado em /owner/profile
+  if (user?.role === "owner") {
+    navigate({ to: "/owner/profile", replace: true });
+    return null;
+  }
+
   if (!user) return null;
 
   const favs = snackbars.filter((s) => user.favorites.includes(s.id));
