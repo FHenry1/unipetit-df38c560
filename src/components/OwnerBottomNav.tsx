@@ -1,11 +1,12 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, UtensilsCrossed, Receipt, Star } from "lucide-react";
+import { LayoutDashboard, UtensilsCrossed, Receipt, Star, User } from "lucide-react";
 
 const items = [
   { to: "/owner", label: "Dashboard", icon: LayoutDashboard },
   { to: "/owner/menu", label: "Cardápio", icon: UtensilsCrossed },
   { to: "/owner/orders", label: "Pedidos", icon: Receipt },
   { to: "/owner/reviews", label: "Avaliações", icon: Star },
+  { to: "/owner/profile", label: "Perfil", icon: User },
 ] as const;
 
 export function OwnerBottomNav() {
