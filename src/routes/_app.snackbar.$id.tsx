@@ -515,10 +515,10 @@ function InfoTab({ snackbar }: { snackbar: ReturnType<typeof useAuth>["snackbars
           <Navigation size={16} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-white">
             Endereço
           </p>
-          <p className="truncate font-medium text-surface-foreground">
+          <p className="truncate font-medium text-white">
             {snackbar.location}
           </p>
         </div>
@@ -526,14 +526,14 @@ function InfoTab({ snackbar }: { snackbar: ReturnType<typeof useAuth>["snackbars
       </a>
 
       <div className="rounded-xl border border-border bg-background p-3.5">
-        <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-white">
           <Clock size={12} /> Horário de funcionamento
         </p>
         <ul className="mt-2 divide-y divide-border text-sm">
           {hours.map((h) => (
             <li key={h.d} className="flex items-center justify-between py-2">
-              <span className="text-surface-foreground">{h.d}</span>
-              <span className="font-semibold text-muted-foreground">{h.h}</span>
+              <span className="text-white">{h.d}</span>
+              <span className="font-semibold text-white">{h.h}</span>
             </li>
           ))}
         </ul>
