@@ -44,28 +44,6 @@ function OwnerDashboard() {
     [reviews, mySnackbar],
   );
 
-  if (!mySnackbar) {
-    return (
-      <div className="px-5 pt-10 text-sm text-neutral-400">
-        Você ainda não é dono.{" "}
-        <Link to="/profile" className="text-[#e85d75] underline">
-          Tornar-se dono
-        </Link>
-      </div>
-    );
-  }
-
-
-  const today = new Date().toDateString();
-  const todayOrders = myOrders.filter(
-    (o) => new Date(o.created_at).toDateString() === today,
-  );
-  const salesToday = todayOrders
-    .filter((o) => o.status !== "cancelled")
-    .reduce((a, o) => a + o.total, 0);
-  const pendingCount = myOrders.filter((o) => o.status === "pending").length;
-  const newReviews = myReviews.filter((r) => !r.owner_seen).length;
-
   // Last 7 days
   const salesSeries = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -85,12 +63,12 @@ function OwnerDashboard() {
     });
   }, [myOrders]);
 
-  // Top categories (by menu items count per category — proxy, no orders→items join needed here)
+  // Top categories (by menu items count per category)
   const categoryData = useMemo(() => {
+    if (!mySnackbar) return [];
     const counts: Record<string, number> = {};
     mySnackbar.categories.forEach((c) => (counts[c] = 0));
     mySnackbar.menu_items.forEach((i) => {
-      // simple fallback: spread across owner categories
       mySnackbar.categories.forEach((c) => {
         if (i.name.toLowerCase().includes(c.toLowerCase())) counts[c] = (counts[c] ?? 0) + 1;
       });
@@ -98,6 +76,27 @@ function OwnerDashboard() {
     const list = Object.entries(counts).map(([name, value]) => ({ name, value }));
     return list.length ? list : [{ name: "Itens", value: mySnackbar.menu_items.length }];
   }, [mySnackbar]);
+
+  if (!mySnackbar) {
+    return (
+      <div className="px-5 pt-10 text-sm text-neutral-400">
+        Você ainda não é dono.{" "}
+        <Link to="/profile" className="text-[#e85d75] underline">
+          Tornar-se dono
+        </Link>
+      </div>
+    );
+  }
+
+  const today = new Date().toDateString();
+  const todayOrders = myOrders.filter(
+    (o) => new Date(o.created_at).toDateString() === today,
+  );
+  const salesToday = todayOrders
+    .filter((o) => o.status !== "cancelled")
+    .reduce((a, o) => a + o.total, 0);
+  const pendingCount = myOrders.filter((o) => o.status === "pending").length;
+  const newReviews = myReviews.filter((r) => !r.owner_seen).length;
 
   const totalWeek = salesSeries.reduce((a, b) => a + b.total, 0);
 
