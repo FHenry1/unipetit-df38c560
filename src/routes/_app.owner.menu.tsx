@@ -258,8 +258,13 @@ function OwnerMenu() {
                   <GripVertical size={14} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="truncate text-sm font-semibold text-white">{m.name}</p>
+                    {m.category && (
+                      <span className="rounded-full bg-[#5d0a1a]/40 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#e85d75]">
+                        {m.category}
+                      </span>
+                    )}
                     {!m.is_active && (
                       <span className="rounded-full bg-neutral-800 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">
                         Inativo
