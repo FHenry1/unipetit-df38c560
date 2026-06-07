@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.enforce_review_column_perms() FROM PUBLIC, anon, authenticated;
