@@ -27,6 +27,8 @@ export interface SnackBar {
   rating: number;
   categories: string[];
   cover: string;
+  lat: number | null;
+  lng: number | null;
   menu_items: MenuItem[];
 }
 
@@ -128,6 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       rating: Number(s.rating ?? 0),
       categories: s.categories ?? [],
       cover: s.cover ?? FALLBACK_COVER,
+      lat: s.lat != null ? Number(s.lat) : null,
+      lng: s.lng != null ? Number(s.lng) : null,
       menu_items: (items ?? [])
         .filter((m) => m.snackbar_id === s.id)
         .map((m) => ({
