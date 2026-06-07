@@ -316,6 +316,11 @@ function OwnerMenu() {
               onChange={(v) => setItemDraft({ ...itemDraft, description: v })}
             />
             <Input
+              label="Categoria (ex: Lanches, Bebidas, Sobremesas)"
+              value={itemDraft.category}
+              onChange={(v) => setItemDraft({ ...itemDraft, category: v })}
+            />
+            <Input
               label="Preço (R$)"
               value={itemDraft.price}
               onChange={(v) => setItemDraft({ ...itemDraft, price: v })}
