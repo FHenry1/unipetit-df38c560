@@ -44,20 +44,25 @@ function ProfilePage() {
     user,
     logout,
     becomeOwner,
+    exitOwnerMode,
     snackbars,
     orders,
+    reviews,
     updateProfile,
     getOrderItems,
     refresh,
   } = useAuth();
   const navigate = useNavigate();
   const [loadingOwner, setLoadingOwner] = useState(false);
+  const [exitingOwner, setExitingOwner] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [repeating, setRepeating] = useState<string | null>(null);
+  const [tab, setTab] = useState<"favorites" | "reviews" | "settings">("favorites");
 
   if (!user) return null;
 
   const favs = snackbars.filter((s) => user.favorites.includes(s.id));
+  const myReviews = reviews.filter((r) => r.user_id === user.id);
   const myOrders = orders.slice(0, 10);
 
   const onBecomeOwner = async () => {
@@ -68,6 +73,18 @@ function ProfilePage() {
       navigate({ to: "/owner" });
     } finally {
       setLoadingOwner(false);
+    }
+  };
+
+  const onExitOwner = async () => {
+    if (exitingOwner) return;
+    if (!window.confirm("Deseja voltar ao modo consumidor? Sua lanchonete continua salva.")) return;
+    setExitingOwner(true);
+    try {
+      await exitOwnerMode();
+      setTab("favorites");
+    } finally {
+      setExitingOwner(false);
     }
   };
 
@@ -107,10 +124,16 @@ function ProfilePage() {
     }
   };
 
+  const tabs = [
+    { id: "favorites" as const, label: "Favoritos", icon: Heart, count: favs.length },
+    { id: "reviews" as const, label: "Avaliações", icon: Star, count: myReviews.length },
+    { id: "settings" as const, label: "Ajustes", icon: SettingsIcon, count: null },
+  ];
+
   return (
     <div className="pb-8">
       {/* Hero header */}
-      <div className="relative overflow-hidden px-5 pt-10 pb-16">
+      <div className="relative overflow-hidden px-5 pt-10 pb-20">
         <div
           aria-hidden
           className="absolute inset-0 -z-10"
@@ -130,160 +153,270 @@ function ProfilePage() {
             {user.role === "owner" ? "Proprietário" : "Consumidor"}
           </span>
         </div>
+
+        {/* Stats */}
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          <StatCard icon={<Heart size={16} className="text-rose-500" />} label="Favoritos" value={favs.length} />
+          <StatCard icon={<Star size={16} className="text-amber-500" />} label="Avaliações" value={myReviews.length} />
+          <StatCard icon={<Receipt size={16} className="text-brand" />} label="Pedidos" value={orders.length} />
+        </div>
       </div>
 
-      <div className="-mt-10 space-y-6 px-5">
-        {/* Stats */}
-        <section className="grid grid-cols-3 gap-3">
-          <StatCard icon={<Heart size={16} className="text-rose-500" />} label="Favoritos" value={favs.length} />
-          <StatCard icon={<Receipt size={16} className="text-brand" />} label="Pedidos" value={orders.length} />
-          <StatCard icon={<Star size={16} className="text-amber-500" />} label="Repedidos" value={orders.filter(o => o.status === "delivered").length} />
-        </section>
+      <div className="-mt-12 space-y-5 px-5">
+        {/* Tabs */}
+        <div className="rounded-2xl bg-surface p-1.5 shadow-card">
+          <div className="grid grid-cols-3 gap-1">
+            {tabs.map((t) => {
+              const active = tab === t.id;
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`relative flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-semibold transition ${
+                    active ? "bg-brand text-white shadow-glow" : "text-muted-foreground hover:bg-muted/60"
+                  }`}
+                >
+                  <Icon size={14} />
+                  <span>{t.label}</span>
+                  {t.count !== null && t.count > 0 && (
+                    <span className={`ml-0.5 rounded-full px-1.5 text-[10px] font-bold ${active ? "bg-white/25 text-white" : "bg-muted text-foreground"}`}>
+                      {t.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-        {/* Editar dados */}
-        <ProfileForm
-          initial={{ name: user.name, phone: user.phone, address: user.address }}
-          email={user.email}
-          onSave={updateProfile}
-        />
-
-        {/* Histórico de pedidos */}
-        <section>
-          <SectionHeader icon={<Receipt size={14} className="text-brand" />} title="Histórico de pedidos" count={myOrders.length} />
-          {myOrders.length === 0 ? (
-            <EmptyState icon={<Receipt size={18} className="text-brand" />} title="Sem pedidos ainda" subtitle="Quando você fizer um pedido ele aparece aqui." />
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {myOrders.map((o) => {
-                const sb = snackbars.find((s) => s.id === o.snackbar_id);
-                const st = STATUS_LABEL[o.status] ?? STATUS_LABEL.pending;
-                return (
-                  <li key={o.id} className="rounded-2xl bg-surface p-3 text-surface-foreground shadow-card">
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 shrink-0 rounded-xl bg-cover bg-center bg-muted" style={{ backgroundImage: sb ? `url(${sb.cover})` : undefined }} />
+        {/* TAB: Favoritos */}
+        {tab === "favorites" && (
+          <section className="space-y-3">
+            {favs.length === 0 ? (
+              <EmptyCard
+                icon={<Heart size={20} className="text-rose-500" />}
+                title="Nenhum favorito ainda"
+                subtitle="Toque no coração das lanchonetes para salvá-las aqui."
+                cta={{ label: "Explorar lanchonetes", to: "/home" }}
+              />
+            ) : (
+              <ul className="space-y-2">
+                {favs.map((s) => (
+                  <li key={s.id}>
+                    <Link
+                      to="/snackbar/$id"
+                      params={{ id: s.id }}
+                      className="flex items-center gap-3 rounded-2xl bg-surface p-3 text-surface-foreground shadow-card transition active:scale-[0.99]"
+                    >
+                      <div className="h-14 w-14 shrink-0 rounded-xl bg-cover bg-center" style={{ backgroundImage: `url(${s.cover})` }} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <h4 className="truncate text-sm font-semibold">{sb?.name ?? "Lanchonete"}</h4>
-                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${st.cls}`}>{st.label}</span>
+                          <h4 className="truncate text-sm font-semibold">{s.name}</h4>
+                          <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold">
+                            <Star size={10} className="fill-current text-amber-500" />
+                            {s.rating.toFixed(1)}
+                          </span>
                         </div>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {new Date(o.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} · R$ {o.total.toFixed(2)}
-                        </p>
+                        <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{s.location}</p>
                       </div>
-                      <button
-                        onClick={() => onRepeat(o.id, o.snackbar_id)}
-                        disabled={repeating === o.id || !sb}
-                        className="flex shrink-0 items-center gap-1 rounded-lg bg-brand-soft px-2.5 py-1.5 text-[11px] font-semibold text-brand hover:bg-brand/10 disabled:opacity-60"
-                      >
-                        {repeating === o.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
-                        Repedir
-                      </button>
-                    </div>
+                      <ChevronRight size={16} className="shrink-0 text-muted-foreground" />
+                    </Link>
                   </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
+                ))}
+              </ul>
+            )}
 
-        {/* Favoritos */}
-        <section>
-          <SectionHeader icon={<Heart size={14} className="text-rose-500" />} title="Meus favoritos" count={favs.length} />
-          {favs.length === 0 ? (
-            <EmptyState icon={<Heart size={18} className="text-rose-500" />} title="Nenhum favorito ainda" subtitle="Toque no coração das lanchonetes para salvá-las aqui." />
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {favs.map((s) => (
-                <li key={s.id}>
-                  <Link
-                    to="/snackbar/$id"
-                    params={{ id: s.id }}
-                    className="flex items-center gap-3 rounded-2xl bg-surface p-3 text-surface-foreground shadow-card transition active:scale-[0.99]"
-                  >
-                    <div className="h-14 w-14 shrink-0 rounded-xl bg-cover bg-center" style={{ backgroundImage: `url(${s.cover})` }} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="truncate text-sm font-semibold">{s.name}</h4>
-                        <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold">
-                          <Star size={10} className="fill-current text-amber-500" />
-                          {s.rating.toFixed(1)}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{s.location}</p>
-                    </div>
-                    <ChevronRight size={16} className="shrink-0 text-muted-foreground" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {/* Segurança */}
-        <section className="overflow-hidden rounded-2xl bg-surface text-surface-foreground shadow-card">
-          <button
-            onClick={() => setShowPwd(true)}
-            className="flex w-full items-center justify-between border-b border-border px-4 py-3.5 text-left hover:bg-muted/40"
-          >
-            <span className="flex items-center gap-3 text-sm font-medium">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-soft text-brand"><KeyRound size={16} /></span>
-              Trocar senha
-            </span>
-            <ChevronRight size={16} className="text-muted-foreground" />
-          </button>
-          <button
-            onClick={async () => {
-              await logout();
-              navigate({ to: "/" });
-            }}
-            className="flex w-full items-center justify-between px-4 py-3.5 text-left hover:bg-muted/40"
-          >
-            <span className="flex items-center gap-3 text-sm font-medium text-rose-600">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-rose-100 text-rose-600"><LogOut size={16} /></span>
-              Sair da conta
-            </span>
-            <ChevronRight size={16} className="text-muted-foreground" />
-          </button>
-        </section>
-
-        {/* Become owner */}
-        {user.role === "user" && (
-          <section
-            className="relative overflow-hidden rounded-2xl p-5 text-white shadow-glow"
-            style={{ background: "linear-gradient(135deg,#7a1228 0%,#5d0a1a 55%,#3a0510 100%)" }}
-          >
-            <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-            <div className="relative">
-              <div className="flex items-center gap-2">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15"><Store size={18} /></span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#3a0510]">
-                  <TrendingUp size={10} /> Novo
-                </span>
+            {/* Histórico recente de pedidos */}
+            {myOrders.length > 0 && (
+              <div className="pt-2">
+                <h3 className="mb-2 flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  <Receipt size={12} /> Pedidos recentes
+                </h3>
+                <ul className="space-y-2">
+                  {myOrders.slice(0, 5).map((o) => {
+                    const sb = snackbars.find((s) => s.id === o.snackbar_id);
+                    const st = STATUS_LABEL[o.status] ?? STATUS_LABEL.pending;
+                    return (
+                      <li key={o.id} className="rounded-2xl bg-surface p-3 text-surface-foreground shadow-card">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 shrink-0 rounded-xl bg-cover bg-center bg-muted" style={{ backgroundImage: sb ? `url(${sb.cover})` : undefined }} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className="truncate text-sm font-semibold">{sb?.name ?? "Lanchonete"}</h4>
+                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${st.cls}`}>{st.label}</span>
+                            </div>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                              {new Date(o.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} · R$ {o.total.toFixed(2)}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => onRepeat(o.id, o.snackbar_id)}
+                            disabled={repeating === o.id || !sb}
+                            className="flex shrink-0 items-center gap-1 rounded-lg bg-brand-soft px-2.5 py-1.5 text-[11px] font-semibold text-brand hover:bg-brand/10 disabled:opacity-60"
+                          >
+                            {repeating === o.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                            Repedir
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
-              <h3 className="mt-3 text-base font-extrabold">Deseja divulgar sua lanchonete?</h3>
-              <p className="mt-1 text-xs leading-relaxed text-white/85">
-                Torne-se dono no UniPetit, cadastre seu menu e alcance novos clientes na universidade.
-              </p>
-              <button
-                onClick={onBecomeOwner}
-                disabled={loadingOwner}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#5d0a1a] transition active:scale-[0.98] disabled:opacity-70"
-              >
-                {loadingOwner ? "Ativando..." : "Tornar-se Dono de Lanchonete"}
-                <ChevronRight size={16} />
-              </button>
-            </div>
+            )}
           </section>
         )}
 
-        {user.role === "owner" && (
-          <Link to="/owner" className="flex items-center justify-between rounded-2xl bg-surface px-4 py-4 text-surface-foreground shadow-card">
-            <span className="flex items-center gap-2 font-semibold">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-soft text-brand"><Store size={16} /></span>
-              Ir para o painel do proprietário
-            </span>
-            <ChevronRight size={16} className="text-muted-foreground" />
-          </Link>
+        {/* TAB: Avaliações */}
+        {tab === "reviews" && (
+          <section className="space-y-3">
+            {myReviews.length === 0 ? (
+              <EmptyCard
+                icon={<Star size={20} className="text-amber-500" />}
+                title="Você ainda não avaliou"
+                subtitle="Suas avaliações ajudam outros estudantes a escolher."
+                cta={{ label: "Descobrir lanchonetes", to: "/home" }}
+              />
+            ) : (
+              <ul className="space-y-2">
+                {myReviews.map((r) => {
+                  const sb = snackbars.find((s) => s.id === r.snackbar_id);
+                  return (
+                    <li key={r.id} className="rounded-2xl bg-surface p-4 text-surface-foreground shadow-card">
+                      {sb && (
+                        <Link
+                          to="/snackbar/$id"
+                          params={{ id: sb.id }}
+                          className="flex items-center gap-2 text-sm font-semibold hover:text-brand"
+                        >
+                          <div className="h-8 w-8 shrink-0 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${sb.cover})` }} />
+                          <span className="truncate">{sb.name}</span>
+                          <ChevronRight size={14} className="ml-auto text-muted-foreground" />
+                        </Link>
+                      )}
+                      <div className="mt-2 flex items-center gap-1.5">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            size={13}
+                            className={n <= r.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"}
+                          />
+                        ))}
+                        <span className="ml-1 text-[11px] text-muted-foreground">
+                          {formatDistanceToNow(new Date(r.created_at), { addSuffix: true, locale: ptBR })}
+                        </span>
+                      </div>
+                      {r.comment && (
+                        <p className="mt-2 text-sm leading-relaxed text-foreground/90">"{r.comment}"</p>
+                      )}
+                      {r.owner_reply && (
+                        <div className="mt-3 rounded-xl border-l-2 border-brand bg-brand-soft/50 px-3 py-2">
+                          <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-brand">
+                            <MessageSquare size={10} /> Resposta do dono
+                          </p>
+                          <p className="mt-0.5 text-xs leading-relaxed">{r.owner_reply}</p>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {/* TAB: Configurações */}
+        {tab === "settings" && (
+          <section className="space-y-4">
+            {/* Editar dados */}
+            <ProfileForm
+              initial={{ name: user.name, phone: user.phone, address: user.address }}
+              email={user.email}
+              onSave={updateProfile}
+            />
+
+            {/* Segurança */}
+            <div className="overflow-hidden rounded-2xl bg-surface text-surface-foreground shadow-card">
+              <button
+                onClick={() => setShowPwd(true)}
+                className="flex w-full items-center justify-between border-b border-border px-4 py-3.5 text-left hover:bg-muted/40"
+              >
+                <span className="flex items-center gap-3 text-sm font-medium">
+                  <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-soft text-brand"><KeyRound size={16} /></span>
+                  Trocar senha
+                </span>
+                <ChevronRight size={16} className="text-muted-foreground" />
+              </button>
+              <button
+                onClick={async () => {
+                  await logout();
+                  navigate({ to: "/" });
+                }}
+                className="flex w-full items-center justify-between px-4 py-3.5 text-left hover:bg-muted/40"
+              >
+                <span className="flex items-center gap-3 text-sm font-medium text-rose-600">
+                  <span className="grid h-8 w-8 place-items-center rounded-lg bg-rose-100 text-rose-600"><LogOut size={16} /></span>
+                  Sair da conta
+                </span>
+                <ChevronRight size={16} className="text-muted-foreground" />
+              </button>
+            </div>
+
+            {/* Modo proprietário */}
+            {user.role === "user" ? (
+              <div
+                className="relative overflow-hidden rounded-2xl p-5 text-white shadow-glow"
+                style={{ background: "linear-gradient(135deg,#7a1228 0%,#5d0a1a 55%,#3a0510 100%)" }}
+              >
+                <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+                <div className="relative">
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15"><Store size={18} /></span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#3a0510]">
+                      <TrendingUp size={10} /> Novo
+                    </span>
+                  </div>
+                  <h3 className="mt-3 text-base font-extrabold">Deseja divulgar sua lanchonete?</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-white/85">
+                    Torne-se dono no UniPetit, cadastre seu menu e alcance novos clientes na universidade.
+                  </p>
+                  <button
+                    onClick={onBecomeOwner}
+                    disabled={loadingOwner}
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#5d0a1a] transition active:scale-[0.98] disabled:opacity-70"
+                  >
+                    {loadingOwner ? <Loader2 size={14} className="animate-spin" /> : <Store size={14} />}
+                    {loadingOwner ? "Ativando modo dono..." : "Tornar-se Dono de Lanchonete"}
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl bg-surface text-surface-foreground shadow-card">
+                <Link to="/owner" className="flex items-center justify-between border-b border-border px-4 py-3.5 hover:bg-muted/40">
+                  <span className="flex items-center gap-3 text-sm font-medium">
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-soft text-brand"><Store size={16} /></span>
+                    Painel do proprietário
+                  </span>
+                  <ChevronRight size={16} className="text-muted-foreground" />
+                </Link>
+                <button
+                  onClick={onExitOwner}
+                  disabled={exitingOwner}
+                  className="flex w-full items-center justify-between px-4 py-3.5 text-left hover:bg-muted/40 disabled:opacity-60"
+                >
+                  <span className="flex items-center gap-3 text-sm font-medium text-amber-700">
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-amber-100 text-amber-700">
+                      {exitingOwner ? <Loader2 size={16} className="animate-spin" /> : <DoorOpen size={16} />}
+                    </span>
+                    Voltar ao modo consumidor
+                  </span>
+                  <ChevronRight size={16} className="text-muted-foreground" />
+                </button>
+              </div>
+            )}
+          </section>
         )}
       </div>
 
