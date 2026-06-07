@@ -62,6 +62,8 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
+  phone: string;
+  address: string;
   role: Role;
   favorites: string[];
 }
@@ -98,6 +100,8 @@ interface AuthContextValue {
   deleteReview: (reviewId: string) => Promise<void>;
   replyToReview: (reviewId: string, reply: string) => Promise<void>;
   markOwnerReviewsSeen: () => Promise<void>;
+  updateProfile: (patch: { name?: string; phone?: string; address?: string }) => Promise<{ ok: boolean; error?: string }>;
+  getOrderItems: (orderId: string) => Promise<{ name: string; price: number; quantity: number }[]>;
   refresh: () => Promise<void>;
 
 }
@@ -194,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const uid = currentSession.user.id;
     const [{ data: profile }, { data: roles }, { data: favs }] = await Promise.all([
-      supabase.from("profiles").select("name").eq("id", uid).maybeSingle(),
+      supabase.from("profiles").select("name, phone, address").eq("id", uid).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", uid),
       supabase.from("favorites").select("snackbar_id").eq("user_id", uid),
     ]);
@@ -203,6 +207,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: uid,
       email: currentSession.user.email ?? "",
       name: profile?.name?.trim() || currentSession.user.email?.split("@")[0] || "Usuário",
+      phone: (profile as any)?.phone ?? "",
+      address: (profile as any)?.address ?? "",
       role: isOwner ? "owner" : "user",
       favorites: (favs ?? []).map((f) => f.snackbar_id),
     });
@@ -435,6 +441,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadOrders(user?.id ?? null);
   };
 
+  const updateProfile: AuthContextValue["updateProfile"] = async (patch) => {
+    if (!user) return { ok: false, error: "Você precisa estar logado" };
+    const clean: { name?: string; phone?: string; address?: string } = {};
+    if (patch.name !== undefined) clean.name = patch.name.trim().slice(0, 80);
+    if (patch.phone !== undefined) clean.phone = patch.phone.trim().slice(0, 30);
+    if (patch.address !== undefined) clean.address = patch.address.trim().slice(0, 200);
+    const { error } = await supabase.from("profiles").update(clean).eq("id", user.id);
+    if (error) return { ok: false, error: error.message };
+    await loadUser(session);
+    return { ok: true };
+  };
+
+  const getOrderItems: AuthContextValue["getOrderItems"] = async (orderId) => {
+    const { data } = await supabase
+      .from("order_items")
+      .select("name, price, quantity")
+      .eq("order_id", orderId);
+    return (data ?? []).map((i: any) => ({
+      name: i.name,
+      price: Number(i.price),
+      quantity: Number(i.quantity),
+    }));
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -461,6 +491,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         deleteReview,
         replyToReview,
         markOwnerReviewsSeen,
+        updateProfile,
+        getOrderItems,
         refresh,
       }}
 
