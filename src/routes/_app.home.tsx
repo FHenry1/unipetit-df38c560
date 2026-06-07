@@ -90,7 +90,7 @@ function HomePage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar lanchonete ou prato..."
-              className="flex-1 bg-transparent placeholder:text-muted-foreground focus:outline-none"
+              className="flex-1 bg-transparent text-black placeholder:text-muted-foreground focus:outline-none"
             />
             {query && (
               <button onClick={() => setQuery("")} aria-label="Limpar">
