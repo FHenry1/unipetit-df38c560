@@ -12,8 +12,10 @@ import {
   Zap,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logoAsset from "@/assets/unipetit-logo.png.asset.json";
+
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -191,13 +193,11 @@ function Landing() {
         {screen === "signup" && (
           <SignupForm
             onBack={() => setScreen("selection")}
-            onSubmit={async (name, email, password) => {
-              const res = await signup(name, email, password);
-              if (res.ok) navigate({ to: "/home" });
-              return res;
-            }}
+            onGoToLogin={() => setScreen("login")}
+            onSubmit={(name, email, password) => signup(name, email, password)}
           />
         )}
+
         {screen === "forgot" && (
           <ForgotForm
             onBack={() => setScreen("login")}
@@ -427,9 +427,11 @@ function LoginForm({
 
 function SignupForm({
   onBack,
+  onGoToLogin,
   onSubmit,
 }: {
   onBack: () => void;
+  onGoToLogin: () => void;
   onSubmit: (
     name: string,
     email: string,
@@ -442,12 +444,97 @@ function SignupForm({
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [alreadyExists, setAlreadyExists] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const nameValid = name.trim().length >= 2;
   const emailValid = isValidEmail(email);
   const pwdValid = password.length >= 6;
   const strength = passwordStrength(password);
   const canSubmit = nameValid && emailValid && pwdValid && !loading;
+
+  const handleResend = async () => {
+    setResending(true);
+    const { error: err } = await supabase.auth.resend({ type: "signup", email });
+    setResending(false);
+    if (err) toast.error(err.message);
+    else toast.success("E-mail reenviado");
+  };
+
+  if (sent) {
+    return (
+      <div
+        className="flex flex-col items-center text-center"
+        style={{ animation: "fade-in 300ms ease-out" }}
+      >
+        <div
+          className="grid h-16 w-16 place-items-center rounded-full bg-emerald-50 text-emerald-500 text-3xl"
+          style={{ animation: "scale-in 350ms cubic-bezier(0.25,1,0.5,1)" }}
+        >
+          ✉️
+        </div>
+        <h2 className="mt-4 text-2xl font-extrabold text-[#2a0a10]">
+          Verifique sua caixa de entrada
+        </h2>
+        <p className="mt-3 text-sm text-neutral-600">
+          Enviamos um link de confirmação para
+          <br />
+          <strong className="text-[#5d0a1a]">{email}</strong>
+        </p>
+        <p className="mt-3 text-xs text-neutral-500">
+          Clique no link para ativar sua conta e começar a usar o UniPetit.
+        </p>
+        <div className="mt-6 flex w-full gap-2">
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resending}
+            className="flex-1 rounded-2xl border-2 border-[#5d0a1a] px-4 py-3 text-sm font-bold uppercase tracking-wider text-[#5d0a1a] transition hover:bg-[#5d0a1a]/5 active:scale-[0.98] disabled:opacity-60"
+          >
+            {resending ? "Reenviando…" : "Reenviar e-mail"}
+          </button>
+          <button
+            type="button"
+            onClick={onGoToLogin}
+            className="flex-1 rounded-2xl bg-[#5d0a1a] px-4 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-[0_10px_25px_-10px_rgba(93,10,26,0.7)] transition hover:bg-[#6e0e22] active:scale-[0.98]"
+          >
+            Voltar ao login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (alreadyExists) {
+    return (
+      <div
+        className="flex flex-col items-center text-center"
+        style={{ animation: "fade-in 300ms ease-out" }}
+      >
+        <h2 className="text-2xl font-extrabold text-[#2a0a10]">Conta já existe</h2>
+        <p className="mt-3 text-sm text-neutral-600">
+          Já existe uma conta com esse e-mail. Tente fazer login.
+        </p>
+        <div className="mt-6 flex w-full gap-2">
+          <button
+            type="button"
+            onClick={() => setAlreadyExists(false)}
+            className="flex-1 rounded-2xl border-2 border-[#5d0a1a] px-4 py-3 text-sm font-bold uppercase tracking-wider text-[#5d0a1a]"
+          >
+            Voltar
+          </button>
+          <button
+            type="button"
+            onClick={onGoToLogin}
+            className="flex-1 rounded-2xl bg-[#5d0a1a] px-4 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-[0_10px_25px_-10px_rgba(93,10,26,0.7)]"
+          >
+            Ir para o login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form
@@ -458,10 +545,24 @@ function SignupForm({
         setLoading(true);
         const r = await onSubmit(name, email, password);
         setLoading(false);
-        if (!r.ok) setError(r.error ?? "Não foi possível criar a conta");
+        if (r.ok) {
+          setSent(true);
+          return;
+        }
+        const msg = (r.error ?? "").toLowerCase();
+        if (
+          msg.includes("já cadastrado") ||
+          msg.includes("already registered") ||
+          msg.includes("user already")
+        ) {
+          setAlreadyExists(true);
+          return;
+        }
+        setError(r.error ?? "Não foi possível criar a conta");
       }}
       className="flex flex-col"
     >
+
       <h2 className="text-center text-2xl font-extrabold text-[#2a0a10]">
         Criar conta
       </h2>
