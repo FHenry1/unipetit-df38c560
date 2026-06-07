@@ -443,7 +443,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateProfile: AuthContextValue["updateProfile"] = async (patch) => {
     if (!user) return { ok: false, error: "Você precisa estar logado" };
-    const clean: Record<string, string> = {};
+    const clean: { name?: string; phone?: string; address?: string } = {};
     if (patch.name !== undefined) clean.name = patch.name.trim().slice(0, 80);
     if (patch.phone !== undefined) clean.phone = patch.phone.trim().slice(0, 30);
     if (patch.address !== undefined) clean.address = patch.address.trim().slice(0, 200);
