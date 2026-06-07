@@ -62,6 +62,7 @@ function OwnerMenu() {
       name: m.name,
       description: m.description ?? "",
       price: m.price.toFixed(2).replace(".", ","),
+      category: m.category ?? "",
     });
     setModalItemId(m.id);
     setModalMode("edit");
@@ -79,6 +80,7 @@ function OwnerMenu() {
       name: itemDraft.name.trim(),
       description: itemDraft.description.trim(),
       price: parseFloat(itemDraft.price.replace(",", ".")) || 0,
+      category: itemDraft.category.trim() || null,
     };
     setSaving(true);
     try {
