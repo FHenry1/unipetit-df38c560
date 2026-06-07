@@ -35,6 +35,15 @@ function OwnerDashboard() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
+  const myOrders = useMemo(
+    () => (mySnackbar ? orders.filter((o) => o.snackbar_id === mySnackbar.id) : []),
+    [orders, mySnackbar],
+  );
+  const myReviews = useMemo(
+    () => (mySnackbar ? reviews.filter((r) => r.snackbar_id === mySnackbar.id) : []),
+    [reviews, mySnackbar],
+  );
+
   if (!mySnackbar) {
     return (
       <div className="px-5 pt-10 text-sm text-neutral-400">
@@ -46,14 +55,6 @@ function OwnerDashboard() {
     );
   }
 
-  const myOrders = useMemo(
-    () => orders.filter((o) => o.snackbar_id === mySnackbar.id),
-    [orders, mySnackbar.id],
-  );
-  const myReviews = useMemo(
-    () => reviews.filter((r) => r.snackbar_id === mySnackbar.id),
-    [reviews, mySnackbar.id],
-  );
 
   const today = new Date().toDateString();
   const todayOrders = myOrders.filter(
