@@ -62,7 +62,7 @@ function HomePage() {
     (category !== "all" ? 1 : 0) + (minRating > 0 ? 1 : 0) + (onlyFavs ? 1 : 0) + (sort !== "rating" ? 1 : 0);
 
   return (
-    <div className="pb-6 text-white [&_.text-muted-foreground]:text-white [&_.text-surface-foreground]:text-white">
+    <div className="pb-6">
       {/* Banner */}
       <header className="relative overflow-hidden rounded-b-[2rem] bg-brand px-5 pb-8 pt-10 text-primary-foreground">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
