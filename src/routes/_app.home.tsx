@@ -64,7 +64,7 @@ function HomePage() {
   return (
     <div className="pb-6">
       {/* Banner */}
-      <header className="relative overflow-hidden rounded-b-[2rem] bg-gradient-to-br from-brand via-brand to-brand-dark px-5 pb-8 pt-10 text-primary-foreground">
+      <header className="relative overflow-hidden rounded-b-[2rem] bg-gradient-to-br bg-brand px-5 pb-8 pt-10 text-primary-foreground">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
         <div className="absolute -bottom-12 -left-6 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
         <div className="relative flex items-center justify-between">
@@ -108,7 +108,7 @@ function HomePage() {
           >
             <SlidersHorizontal size={18} />
             {activeFiltersCount > 0 && (
-              <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-amber-400 text-[10px] font-bold text-brand-dark">
+              <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-amber-400 text-[10px] font-bold text-[#5d0a1a]">
                 {activeFiltersCount}
               </span>
             )}
@@ -152,7 +152,7 @@ function HomePage() {
                   setMinRating(0);
                   setOnlyFavs(false);
                 }}
-                className="text-xs font-medium text-brand"
+                className="text-xs font-medium text-[#5d0a1a]"
               >
                 Limpar
               </button>
@@ -188,19 +188,19 @@ function HomePage() {
                 step={0.5}
                 value={minRating}
                 onChange={(e) => setMinRating(Number(e.target.value))}
-                className="w-full accent-[hsl(var(--brand))]"
+                className="w-full accent-[#5d0a1a]"
               />
             </div>
 
             <label className="mt-4 flex items-center justify-between text-sm">
               <span className="flex items-center gap-2">
-                <Heart size={14} className="text-brand" /> Só favoritas
+                <Heart size={14} className="text-[#5d0a1a]" /> Só favoritas
               </span>
               <input
                 type="checkbox"
                 checked={onlyFavs}
                 onChange={(e) => setOnlyFavs(e.target.checked)}
-                className="h-4 w-4 accent-[hsl(var(--brand))]"
+                className="h-4 w-4 accent-[#5d0a1a]"
               />
             </label>
           </div>
@@ -212,7 +212,7 @@ function HomePage() {
         <section className="mt-6">
           <div className="mb-3 flex items-end justify-between px-5">
             <h2 className="flex items-center gap-1.5 text-sm font-bold">
-              <Flame size={14} className="text-brand" /> Em destaque
+              <Flame size={14} className="text-[#5d0a1a]" /> Em destaque
             </h2>
             <span className="text-xs text-muted-foreground">Top da semana</span>
           </div>
@@ -288,7 +288,7 @@ function FeaturedCard({
         className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white/90 backdrop-blur transition active:scale-90"
         aria-label="Favoritar"
       >
-        <Heart size={14} className={isFav ? "fill-brand text-brand" : "text-muted-foreground"} />
+        <Heart size={14} className={isFav ? "fill-[#5d0a1a] text-[#5d0a1a]" : "text-muted-foreground"} />
       </button>
       <div className="absolute inset-x-0 bottom-0 p-3 text-white">
         <div className="flex items-center gap-1 text-[11px] font-semibold">
@@ -329,7 +329,7 @@ function SnackCard({
         className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white/90 backdrop-blur transition active:scale-90"
         aria-label="Favoritar"
       >
-        <Heart size={14} className={isFav ? "fill-brand text-brand" : "text-muted-foreground"} />
+        <Heart size={14} className={isFav ? "fill-[#5d0a1a] text-[#5d0a1a]" : "text-muted-foreground"} />
       </button>
       <div className="flex flex-1 flex-col justify-between p-3">
         <div>
