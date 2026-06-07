@@ -13,7 +13,7 @@ function AppShell() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/signup" });
+    if (!loading && !user) navigate({ to: "/" });
   }, [user, loading, navigate]);
 
   if (loading) {
