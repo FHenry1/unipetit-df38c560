@@ -20,7 +20,7 @@ function ForgotPage() {
       title="Recuperar senha"
       subtitle="Enviaremos um link de confirmação para o seu e-mail"
       footer={
-        <Link to="/signup" className="font-semibold text-brand">
+        <Link to="/" className="font-semibold text-brand">
           Voltar ao login
         </Link>
       }
