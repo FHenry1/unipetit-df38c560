@@ -14,6 +14,9 @@ function AppShell() {
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/" });
+    if (!loading && user?.role === "admin" && !location.pathname.startsWith("/admin")) {
+      navigate({ to: "/admin", replace: true });
+    }
   }, [user, loading, navigate]);
 
   if (loading) {
