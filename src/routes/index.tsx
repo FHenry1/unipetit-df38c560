@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 import logoAsset from "@/assets/unipetit-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
