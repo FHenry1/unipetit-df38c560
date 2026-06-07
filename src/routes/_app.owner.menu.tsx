@@ -8,8 +8,8 @@ export const Route = createFileRoute("/_app/owner/menu")({
   component: OwnerMenu,
 });
 
-type ItemDraft = { name: string; description: string; price: string };
-const emptyDraft: ItemDraft = { name: "", description: "", price: "" };
+type ItemDraft = { name: string; description: string; price: string; category: string };
+const emptyDraft: ItemDraft = { name: "", description: "", price: "", category: "" };
 
 function OwnerMenu() {
   const {
