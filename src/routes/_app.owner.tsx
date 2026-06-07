@@ -4,14 +4,20 @@ import {
   DollarSign,
   Eye,
   LayoutDashboard,
+  Loader2,
   LogOut,
+  MapPin,
+  MessageSquare,
+  Pencil,
   Receipt,
   Star,
   TrendingUp,
   UtensilsCrossed,
-  MessageSquare,
+  X,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Area,
   AreaChart,
@@ -23,7 +29,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useAuth } from "@/lib/auth";
+import { useAuth, type SnackBar } from "@/lib/auth";
 import { OwnerHeader } from "@/components/OwnerHeader";
 
 export const Route = createFileRoute("/_app/owner")({
