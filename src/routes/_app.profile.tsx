@@ -558,24 +558,30 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
   );
 }
 
-function SectionHeader({ icon, title, count }: { icon: React.ReactNode; title: string; count: number }) {
+function EmptyCard({
+  icon,
+  title,
+  subtitle,
+  cta,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  cta?: { label: string; to: string };
+}) {
   return (
-    <div className="flex items-center justify-between px-1">
-      <h3 className="flex items-center gap-2 text-sm font-bold text-white">
-        <span className="grid h-7 w-7 place-items-center rounded-lg bg-white/15 backdrop-blur">{icon}</span>
-        {title}
-      </h3>
-      <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">{count}</span>
-    </div>
-  );
-}
-
-function EmptyState({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
-  return (
-    <div className="mt-3 flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/20 bg-white/5 px-5 py-7 text-center">
-      <span className="grid h-10 w-10 place-items-center rounded-full bg-white/10">{icon}</span>
-      <p className="text-sm font-semibold text-white">{title}</p>
-      <p className="text-xs text-white/70">{subtitle}</p>
+    <div className="flex flex-col items-center gap-2 rounded-2xl bg-surface px-5 py-8 text-center text-surface-foreground shadow-card">
+      <span className="grid h-12 w-12 place-items-center rounded-full bg-muted">{icon}</span>
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="max-w-[28ch] text-xs text-muted-foreground">{subtitle}</p>
+      {cta && (
+        <Link
+          to={cta.to}
+          className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand px-4 py-2 text-xs font-bold text-white shadow-glow transition active:scale-[0.98]"
+        >
+          {cta.label} <ChevronRight size={12} />
+        </Link>
+      )}
     </div>
   );
 }
