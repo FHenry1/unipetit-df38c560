@@ -33,14 +33,8 @@ function SignupPage() {
     <AuthCard
       title="Crie sua conta"
       subtitle="Comece a descobrir lanchonetes"
-      footer={
-        <>
-          Já tem conta?{" "}
-          <Link to="/signup" className="font-semibold text-brand">
-            Entrar
-          </Link>
-        </>
-      }
+      footer={null}
+
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <BrandInput
