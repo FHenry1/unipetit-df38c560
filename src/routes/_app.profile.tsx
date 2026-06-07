@@ -44,7 +44,6 @@ function ProfilePage() {
     user,
     logout,
     becomeOwner,
-    exitOwnerMode,
     snackbars,
     orders,
     reviews,
@@ -54,7 +53,6 @@ function ProfilePage() {
   } = useAuth();
   const navigate = useNavigate();
   const [loadingOwner, setLoadingOwner] = useState(false);
-  const [exitingOwner, setExitingOwner] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [repeating, setRepeating] = useState<string | null>(null);
   const [tab, setTab] = useState<"favorites" | "reviews" | "settings">("favorites");
