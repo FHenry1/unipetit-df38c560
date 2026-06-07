@@ -261,6 +261,7 @@ export type Database = {
           owner_id: string
           rating: number
           updated_at: string
+          view_count: number
         }
         Insert: {
           categories?: string[]
@@ -275,6 +276,7 @@ export type Database = {
           owner_id: string
           rating?: number
           updated_at?: string
+          view_count?: number
         }
         Update: {
           categories?: string[]
@@ -289,6 +291,7 @@ export type Database = {
           owner_id?: string
           rating?: number
           updated_at?: string
+          view_count?: number
         }
         Relationships: []
       }
@@ -335,6 +338,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_snackbar_views: { Args: { _id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "user" | "owner" | "admin"

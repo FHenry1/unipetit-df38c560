@@ -15,6 +15,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { useAuth, type Review } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_app/snackbar/$id")({
   component: SnackBarDetail,
@@ -26,6 +27,12 @@ function SnackBarDetail() {
     useAuth();
   const s = snackbars.find((x) => x.id === id);
   const [tab, setTab] = useState<"menu" | "reviews" | "info">("menu");
+
+  useEffect(() => {
+    if (!id) return;
+    void supabase.rpc("increment_snackbar_views", { _id: id });
+  }, [id]);
+
 
   const snackReviews = useMemo(
     () => reviews.filter((r) => r.snackbar_id === id),

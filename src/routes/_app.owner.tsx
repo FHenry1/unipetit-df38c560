@@ -4,14 +4,20 @@ import {
   DollarSign,
   Eye,
   LayoutDashboard,
+  Loader2,
   LogOut,
+  MapPin,
+  MessageSquare,
+  Pencil,
   Receipt,
   Star,
   TrendingUp,
   UtensilsCrossed,
-  MessageSquare,
+  X,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Area,
   AreaChart,
@@ -23,7 +29,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useAuth } from "@/lib/auth";
+import { useAuth, type SnackBar } from "@/lib/auth";
 import { OwnerHeader } from "@/components/OwnerHeader";
 
 export const Route = createFileRoute("/_app/owner")({
@@ -31,9 +37,10 @@ export const Route = createFileRoute("/_app/owner")({
 });
 
 function OwnerDashboard() {
-  const { mySnackbar, orders, reviews, logout } = useAuth();
+  const { mySnackbar, orders, reviews, logout, updateMySnackbar } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const [editing, setEditing] = useState(false);
 
   const myOrders = useMemo(
     () => (mySnackbar ? orders.filter((o) => o.snackbar_id === mySnackbar.id) : []),
@@ -138,12 +145,76 @@ function OwnerDashboard() {
           <p className="mt-1 text-xs text-white/70">{todayOrders.length} pedido(s) recebidos</p>
         </div>
 
-        {/* Resumo */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Resumo — 3 colunas */}
+        <div className="grid grid-cols-3 gap-3">
+          <Metric icon={<Eye size={16} />} value={String(mySnackbar.view_count)} label="Visualizações" />
+          <Metric icon={<Star size={16} />} value={mySnackbar.rating ? mySnackbar.rating.toFixed(1) : "—"} label="Avaliação" />
           <Metric icon={<Receipt size={16} />} value={String(pendingCount)} label="Pendentes" accent />
-          <Metric icon={<Star size={16} />} value={mySnackbar.rating ? mySnackbar.rating.toFixed(1) : "—"} label="Avaliação média" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
           <Metric icon={<DollarSign size={16} />} value={`R$ ${totalWeek.toFixed(0)}`} label="Receita 7 dias" />
-          <Metric icon={<Eye size={16} />} value={String(newReviews)} label="Reviews novas" />
+          <Metric icon={<MessageSquare size={16} />} value={String(newReviews)} label="Reviews novas" />
+        </div>
+
+        {/* Ações rápidas */}
+        <div className="grid grid-cols-2 gap-3">
+          <QuickAction
+            icon={<UtensilsCrossed size={18} />}
+            label="Gerenciar menu"
+            sub={`${mySnackbar.menu_items.length} itens`}
+            onClick={() => navigate({ to: "/owner/menu" })}
+          />
+          <QuickAction
+            icon={<Pencil size={18} />}
+            label="Atualizar informações"
+            sub="Nome, endereço, capa"
+            onClick={() => setEditing(true)}
+          />
+        </div>
+
+        {/* Avaliações recentes */}
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-white">Avaliações recentes</h3>
+              <p className="text-[11px] text-neutral-500">Últimas avaliações dos clientes</p>
+            </div>
+            <Link to="/owner/reviews" className="text-[11px] font-semibold text-[#e85d75] hover:underline">
+              Ver todas
+            </Link>
+          </div>
+          {myReviews.length === 0 ? (
+            <p className="py-4 text-center text-xs text-neutral-500">Nenhuma avaliação ainda.</p>
+          ) : (
+            <ul className="space-y-3">
+              {myReviews
+                .slice()
+                .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
+                .slice(0, 3)
+                .map((r) => (
+                  <li key={r.id} className="rounded-xl border border-neutral-800/60 bg-neutral-950/50 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-xs font-semibold text-neutral-200">{r.user_name}</p>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star
+                            key={n}
+                            size={11}
+                            className={n <= r.rating ? "fill-amber-400 text-amber-400" : "text-neutral-700"}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {r.comment && (
+                      <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-neutral-400">"{r.comment}"</p>
+                    )}
+                    <p className="mt-1.5 text-[10px] text-neutral-600">
+                      {formatDistanceToNow(new Date(r.created_at), { addSuffix: true, locale: ptBR })}
+                    </p>
+                  </li>
+                ))}
+            </ul>
+          )}
         </div>
 
         {/* Sales chart */}
@@ -219,9 +290,164 @@ function OwnerDashboard() {
           Ver página pública
         </Link>
       </div>
+
+      {editing && (
+        <EditSnackbarModal
+          snackbar={mySnackbar}
+          onClose={() => setEditing(false)}
+          onSave={async (patch) => {
+            await updateMySnackbar(patch);
+            setEditing(false);
+          }}
+        />
+      )}
     </div>
   );
 }
+
+function QuickAction({
+  icon,
+  label,
+  sub,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  sub: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex flex-col items-start gap-1 rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-left transition hover:border-[#5d0a1a] hover:bg-neutral-900/80"
+    >
+      <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#5d0a1a] text-[#e85d75] group-hover:bg-[#7a1228] group-hover:text-white">
+        {icon}
+      </span>
+      <p className="mt-1 text-sm font-bold text-white">{label}</p>
+      <p className="text-[11px] text-neutral-500">{sub}</p>
+    </button>
+  );
+}
+
+function EditSnackbarModal({
+  snackbar,
+  onClose,
+  onSave,
+}: {
+  snackbar: SnackBar;
+  onClose: () => void;
+  onSave: (patch: Partial<SnackBar>) => Promise<void>;
+}) {
+  const [name, setName] = useState(snackbar.name);
+  const [description, setDescription] = useState(snackbar.description);
+  const [location, setLocation] = useState(snackbar.location);
+  const [cover, setCover] = useState(snackbar.cover);
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onSave({ name, description, location, cover });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900 text-white"
+      >
+        <div className="flex items-center justify-between border-b border-neutral-800 px-5 py-3">
+          <h3 className="text-sm font-bold">Atualizar informações</h3>
+          <button onClick={onClose} className="text-neutral-500 hover:text-white" aria-label="Fechar">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="space-y-3 p-5">
+          <ModalField label="Nome">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-[#e85d75]"
+            />
+          </ModalField>
+          <ModalField label="Descrição">
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="w-full resize-none rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-[#e85d75]"
+            />
+          </ModalField>
+          <ModalField label="Endereço" icon={<MapPin size={12} />}>
+            <input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-[#e85d75]"
+            />
+          </ModalField>
+          <ModalField label="URL da capa">
+            <input
+              value={cover}
+              onChange={(e) => setCover(e.target.value)}
+              placeholder="https://..."
+              className="w-full rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-[#e85d75]"
+            />
+            {cover && (
+              <div
+                className="mt-2 h-24 w-full rounded-xl bg-cover bg-center"
+                style={{ backgroundImage: `url(${cover})` }}
+              />
+            )}
+          </ModalField>
+
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={onClose}
+              className="flex-1 rounded-xl border border-neutral-800 px-4 py-2.5 text-sm font-semibold text-neutral-300 hover:bg-neutral-800/50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={submit}
+              disabled={saving || !name.trim()}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#5d0a1a] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+              Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModalField({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+        {icon}
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
 
 function TabLink({
   to,
