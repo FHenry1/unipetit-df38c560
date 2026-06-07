@@ -541,7 +541,7 @@ function OwnerApplicationCard({ userId }: { userId: string }) {
     else setStatus("none");
   };
 
-  useMemo(() => { load(); }, [userId]);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [userId]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
