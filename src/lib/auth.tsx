@@ -33,6 +33,7 @@ export interface SnackBar {
   lat: number | null;
   lng: number | null;
   menu_items: MenuItem[];
+  view_count: number;
 }
 
 export interface Review {
