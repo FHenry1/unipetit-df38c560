@@ -64,7 +64,7 @@ function HomePage() {
   return (
     <div className="pb-6">
       {/* Banner */}
-      <header className="relative overflow-hidden rounded-b-[2rem] bg-gradient-to-br bg-brand px-5 pb-8 pt-10 text-primary-foreground">
+      <header className="relative overflow-hidden rounded-b-[2rem] bg-brand px-5 pb-8 pt-10 text-primary-foreground">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
         <div className="absolute -bottom-12 -left-6 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
         <div className="relative flex items-center justify-between">
