@@ -350,33 +350,8 @@ function ProfilePage() {
             </div>
 
             {/* Modo proprietário */}
-            <div
-              className="relative overflow-hidden rounded-2xl p-5 text-white shadow-glow"
-              style={{ background: "linear-gradient(135deg,#7a1228 0%,#5d0a1a 55%,#3a0510 100%)" }}
-            >
-              <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-              <div className="relative">
-                <div className="flex items-center gap-2">
-                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/15"><Store size={18} /></span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#3a0510]">
-                    <TrendingUp size={10} /> Novo
-                  </span>
-                </div>
-                <h3 className="mt-3 text-base font-extrabold">Deseja divulgar sua lanchonete?</h3>
-                <p className="mt-1 text-xs leading-relaxed text-white/85">
-                  Torne-se dono no UniPetit, cadastre seu menu e alcance novos clientes na universidade.
-                </p>
-                <button
-                  onClick={onBecomeOwner}
-                  disabled={loadingOwner}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#5d0a1a] transition active:scale-[0.98] disabled:opacity-70"
-                >
-                  {loadingOwner ? <Loader2 size={14} className="animate-spin" /> : <Store size={14} />}
-                  {loadingOwner ? "Ativando modo dono..." : "Tornar-se Dono de Lanchonete"}
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
+            <OwnerApplicationCard userId={user.id} />
+
           </section>
         )}
       </div>
