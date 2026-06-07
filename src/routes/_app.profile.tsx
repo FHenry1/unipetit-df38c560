@@ -452,7 +452,7 @@ function ProfileForm({
       {msg && (
         <p className={`mt-2 text-center text-xs font-semibold ${msg.ok ? "text-emerald-600" : "text-rose-600"}`}>{msg.text}</p>
       )}
-      <style>{`.input-bare{width:100%;background:transparent;outline:none;font-size:14px;font-weight:500;color:inherit}`}</style>
+      <style>{`.input-bare{width:100%;background:transparent;outline:none;font-size:14px;font-weight:500;color:#fff}`}</style>
     </form>
   );
 }
