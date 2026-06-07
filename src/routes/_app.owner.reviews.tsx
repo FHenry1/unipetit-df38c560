@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Reply, Sparkles, Star, X } from "lucide-react";
+import { ArrowDownUp, MessageCircle, MessageCircleOff, Reply, Sparkles, Star, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { OwnerHeader } from "@/components/OwnerHeader";
 import { useAuth, type Review } from "@/lib/auth";
@@ -8,19 +8,46 @@ export const Route = createFileRoute("/_app/owner/reviews")({
   component: OwnerReviews,
 });
 
+type StarFilter = "all" | 5 | 4 | 3 | 2 | 1;
+type ReplyFilter = "all" | "replied" | "unreplied";
+type SortBy = "recent" | "rating-desc" | "rating-asc";
+
 function OwnerReviews() {
   const { mySnackbar, reviews, replyToReview, markOwnerReviewsSeen } = useAuth();
   const [replyingId, setReplyingId] = useState<string | null>(null);
   const [replyDraft, setReplyDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [starFilter, setStarFilter] = useState<StarFilter>("all");
+  const [replyFilter, setReplyFilter] = useState<ReplyFilter>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("recent");
 
   const myReviews = useMemo(
     () => (mySnackbar ? reviews.filter((r) => r.snackbar_id === mySnackbar.id) : []),
     [reviews, mySnackbar],
   );
-  const unseenCount = myReviews.filter((r) => !r.owner_seen).length;
 
-  // Mark all as seen after a short delay (gives the "NEW" badge time to be visible)
+  const filteredReviews = useMemo(() => {
+    let list = myReviews;
+    if (starFilter !== "all") list = list.filter((r) => r.rating === starFilter);
+    if (replyFilter === "replied") list = list.filter((r) => !!r.owner_reply);
+    if (replyFilter === "unreplied") list = list.filter((r) => !r.owner_reply);
+    const sorted = [...list];
+    if (sortBy === "recent") {
+      sorted.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    } else if (sortBy === "rating-desc") {
+      sorted.sort((a, b) => b.rating - a.rating);
+    } else {
+      sorted.sort((a, b) => a.rating - b.rating);
+    }
+    return sorted;
+  }, [myReviews, starFilter, replyFilter, sortBy]);
+
+  const unseenCount = myReviews.filter((r) => !r.owner_seen).length;
+  const unrepliedCount = myReviews.filter((r) => !r.owner_reply).length;
+
   useEffect(() => {
     if (!mySnackbar || unseenCount === 0) return;
     const t = setTimeout(() => {
@@ -69,17 +96,74 @@ function OwnerReviews() {
             <Stars value={Math.round(avg)} />
           </div>
           <p className="mt-1 text-[11px] text-white/60">
-            Atualizada automaticamente a cada avaliação
+            {unrepliedCount > 0
+              ? `${unrepliedCount} avaliação${unrepliedCount > 1 ? "ões" : ""} sem resposta`
+              : "Tudo respondido — ótimo trabalho!"}
           </p>
         </div>
 
+        <div className="space-y-2">
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Chip active={starFilter === "all"} onClick={() => setStarFilter("all")}>
+              Todas
+            </Chip>
+            {([5, 4, 3, 2, 1] as const).map((n) => (
+              <Chip
+                key={n}
+                active={starFilter === n}
+                onClick={() => setStarFilter(n)}
+              >
+                {n} <Star size={10} className="fill-amber-400 text-amber-400" />
+              </Chip>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1">
+            <Chip
+              active={replyFilter === "all"}
+              onClick={() => setReplyFilter("all")}
+            >
+              Todas
+            </Chip>
+            <Chip
+              active={replyFilter === "unreplied"}
+              onClick={() => setReplyFilter("unreplied")}
+            >
+              <MessageCircleOff size={11} /> Sem resposta
+            </Chip>
+            <Chip
+              active={replyFilter === "replied"}
+              onClick={() => setReplyFilter("replied")}
+            >
+              <MessageCircle size={11} /> Respondidas
+            </Chip>
+            <div className="ml-auto">
+              <label className="flex items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900 px-2.5 py-1 text-[11px] text-neutral-400">
+                <ArrowDownUp size={11} />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortBy)}
+                  className="bg-transparent text-white focus:outline-none"
+                >
+                  <option className="bg-neutral-900" value="recent">Mais recentes</option>
+                  <option className="bg-neutral-900" value="rating-desc">Maior nota</option>
+                  <option className="bg-neutral-900" value="rating-asc">Menor nota</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-3">
-          {myReviews.length === 0 && (
+          {filteredReviews.length === 0 && (
             <div className="rounded-xl border border-dashed border-neutral-800 p-8 text-center text-xs text-neutral-500">
-              Nenhuma avaliação ainda.
+              {myReviews.length === 0
+                ? "Nenhuma avaliação ainda."
+                : "Nenhuma avaliação corresponde aos filtros."}
             </div>
           )}
-          {myReviews.map((r) => {
+          {filteredReviews.map((r) => {
+
             const isNew = !r.owner_seen;
             return (
               <article
