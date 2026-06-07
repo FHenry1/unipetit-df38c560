@@ -27,6 +27,8 @@ export interface SnackBar {
   rating: number;
   categories: string[];
   cover: string;
+  lat: number | null;
+  lng: number | null;
   menu_items: MenuItem[];
 }
 
