@@ -73,9 +73,6 @@ function HomePage() {
             <h1 className="text-2xl font-bold leading-tight">
               {user?.name.split(" ")[0] ?? "amigo"} 👋
             </h1>
-            <p className="mt-1 flex items-center gap-1 text-xs opacity-80">
-              <MapPin size={12} /> Pertinho de você
-            </p>
           </div>
           <Link
             to="/profile"
