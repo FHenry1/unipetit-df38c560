@@ -16,7 +16,10 @@ export interface MenuItem {
   name: string;
   description: string;
   price: number;
+  is_active: boolean;
+  position: number;
 }
+
 
 export interface SnackBar {
   id: string;
