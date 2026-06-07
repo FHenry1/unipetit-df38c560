@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AppRouteImport } from './routes/_app'
@@ -24,11 +23,6 @@ import { Route as AppOwnerReviewsRouteImport } from './routes/_app.owner.reviews
 import { Route as AppOwnerOrdersRouteImport } from './routes/_app.owner.orders'
 import { Route as AppOwnerMenuRouteImport } from './routes/_app.owner.menu'
 
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -98,7 +92,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/signup': typeof SignupRoute
   '/home': typeof AppHomeRoute
   '/map': typeof AppMapRoute
   '/owner': typeof AppOwnerRouteWithChildren
@@ -113,7 +106,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/signup': typeof SignupRoute
   '/home': typeof AppHomeRoute
   '/map': typeof AppMapRoute
   '/owner': typeof AppOwnerRouteWithChildren
@@ -130,7 +122,6 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/signup': typeof SignupRoute
   '/_app/home': typeof AppHomeRoute
   '/_app/map': typeof AppMapRoute
   '/_app/owner': typeof AppOwnerRouteWithChildren
@@ -147,7 +138,6 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/reset-password'
-    | '/signup'
     | '/home'
     | '/map'
     | '/owner'
@@ -162,7 +152,6 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/reset-password'
-    | '/signup'
     | '/home'
     | '/map'
     | '/owner'
@@ -178,7 +167,6 @@ export interface FileRouteTypes {
     | '/_app'
     | '/forgot-password'
     | '/reset-password'
-    | '/signup'
     | '/_app/home'
     | '/_app/map'
     | '/_app/owner'
@@ -195,18 +183,10 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  SignupRoute: typeof SignupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -342,8 +322,17 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
