@@ -156,7 +156,7 @@ function ProfilePage() {
           <p className="mt-0.5 text-xs text-white/70">{user.email}</p>
           <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur">
             <Sparkles size={12} />
-            {user.role === "owner" ? "Proprietário" : "Consumidor"}
+            Consumidor
           </span>
         </div>
 
