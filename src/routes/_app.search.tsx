@@ -51,10 +51,10 @@ function SearchPage() {
         </div>
         <button
           onClick={() => setSheetOpen(true)}
-          className="relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-surface text-surface-foreground shadow-card transition active:scale-95"
+          className="relative grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#5a0a1a] text-white shadow-card transition active:scale-95"
           aria-label="Abrir filtros"
         >
-          <SlidersHorizontal size={18} className="text-brand" />
+          <SlidersHorizontal size={18} className="text-white" />
           {activeCount > 0 && (
             <span className="absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white shadow">
               {activeCount}
