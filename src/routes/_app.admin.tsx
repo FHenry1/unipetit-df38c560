@@ -4,6 +4,7 @@ import {
   BarChart3,
   LogOut,
   MessageSquare,
+  Plus,
   Shield,
   ShieldCheck,
   ShieldOff,
@@ -11,6 +12,7 @@ import {
   Store,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +22,7 @@ export const Route = createFileRoute("/_app/admin")({
   component: AdminPage,
 });
 
-type Tab = "users" | "reviews" | "reports";
+type Tab = "users" | "reviews" | "snackbars" | "reports";
 
 interface AdminUser {
   id: string;
@@ -30,7 +32,7 @@ interface AdminUser {
 }
 
 function AdminPage() {
-  const { user, snackbars, reviews, logout, refresh, deleteReview } = useAuth();
+  const { user, snackbars, reviews, logout, refresh, deleteReview, adminDeleteSnackbar, adminCreateSnackbar } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("users");
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -125,9 +127,10 @@ function AdminPage() {
 
       <div className="-mt-6 px-5 space-y-5">
         {/* Tabs */}
-        <nav className="grid grid-cols-3 gap-1.5 rounded-2xl bg-neutral-900 p-1.5 border border-neutral-800">
+        <nav className="grid grid-cols-4 gap-1.5 rounded-2xl bg-neutral-900 p-1.5 border border-neutral-800">
           <AdminTab active={tab === "users"} onClick={() => setTab("users")} icon={<Users size={14} />} label="Usuários" />
           <AdminTab active={tab === "reviews"} onClick={() => setTab("reviews")} icon={<MessageSquare size={14} />} label="Avaliações" />
+          <AdminTab active={tab === "snackbars"} onClick={() => setTab("snackbars")} icon={<Store size={14} />} label="Lanchonetes" />
           <AdminTab active={tab === "reports"} onClick={() => setTab("reports")} icon={<BarChart3 size={14} />} label="Relatórios" />
         </nav>
 
@@ -141,6 +144,15 @@ function AdminPage() {
         )}
         {tab === "reviews" && (
           <ReviewsTab reviews={reviews} snackbars={snackbars} onDelete={removeReview} />
+        )}
+        {tab === "snackbars" && (
+          <SnackbarsTab
+            snackbars={snackbars}
+            onDelete={adminDeleteSnackbar}
+            onCreate={adminCreateSnackbar}
+            users={users}
+            loadUsers={loadUsers}
+          />
         )}
         {tab === "reports" && <ReportsTab snackbars={snackbars} reviews={reviews} />}
       </div>
@@ -385,5 +397,240 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
       </div>
       <p className="mt-1 text-xs text-neutral-400">{label}</p>
     </div>
+  );
+}
+
+function SnackbarsTab({
+  snackbars,
+  onDelete,
+  onCreate,
+  users,
+  loadUsers,
+}: {
+  snackbars: ReturnType<typeof useAuth>["snackbars"];
+  onDelete: (id: string) => Promise<void>;
+  onCreate: (data: {
+    name: string;
+    description: string;
+    location: string;
+    owner_id: string;
+    categories: string[];
+    opening_time?: string | null;
+    closing_time?: string | null;
+  }) => Promise<{ ok: boolean; error?: string }>;
+  users: AdminUser[];
+  loadUsers: () => Promise<void>;
+}) {
+  const [search, setSearch] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    location: "",
+    owner_id: "",
+    categories: "",
+    opening_time: "",
+    closing_time: "",
+  });
+  const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    if (showModal && users.length === 0) void loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showModal]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return snackbars;
+    return snackbars.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.location.toLowerCase().includes(q),
+    );
+  }, [snackbars, search]);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Excluir a lanchonete "${name}"? Esta ação é irreversível.`)) return;
+    setDeleting(id);
+    try {
+      await onDelete(id);
+      toast.success("Lanchonete excluída.");
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao excluir.");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!form.name.trim() || !form.location.trim() || !form.owner_id) {
+      toast.error("Preencha nome, localização e proprietário.");
+      return;
+    }
+    setCreating(true);
+    const result = await onCreate({
+      name: form.name.trim(),
+      description: form.description.trim(),
+      location: form.location.trim(),
+      owner_id: form.owner_id,
+      categories: form.categories.split(",").map((c) => c.trim()).filter(Boolean),
+      opening_time: form.opening_time || null,
+      closing_time: form.closing_time || null,
+    });
+    setCreating(false);
+    if (result.ok) {
+      toast.success("Lanchonete criada!");
+      setShowModal(false);
+      setForm({ name: "", description: "", location: "", owner_id: "", categories: "", opening_time: "", closing_time: "" });
+    } else {
+      toast.error(result.error ?? "Erro ao criar.");
+    }
+  };
+
+  const owners = users.filter((u) => u.roles.includes("owner"));
+
+  return (
+    <section className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Lanchonetes ({filtered.length})</h2>
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-1.5 rounded-lg bg-[#5d0a1a] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#7a1022] transition"
+        >
+          <Plus size={13} /> Adicionar
+        </button>
+      </div>
+
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Buscar por nome ou localização…"
+        className="mt-3 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-[#e85d75]"
+      />
+
+      <ul className="mt-3 space-y-2">
+        {filtered.map((s) => (
+          <li
+            key={s.id}
+            className="flex items-center justify-between gap-3 rounded-xl border border-neutral-800 bg-neutral-950 p-3"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-white">{s.name}</p>
+              <p className="truncate text-[10px] text-neutral-500">{s.location}</p>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="flex items-center gap-0.5 text-[10px] text-amber-400">
+                  <Star size={10} className="fill-amber-400" /> {s.rating.toFixed(1)}
+                </span>
+                <span className="text-[10px] text-neutral-500">{s.view_count} views</span>
+                {s.categories.slice(0, 2).map((c) => (
+                  <span key={c} className="rounded-full bg-neutral-800 px-1.5 py-0.5 text-[9px] text-neutral-400">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={() => handleDelete(s.id, s.name)}
+              disabled={deleting === s.id}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 disabled:opacity-50"
+              aria-label="Excluir lanchonete"
+            >
+              <Trash2 size={14} />
+            </button>
+          </li>
+        ))}
+        {filtered.length === 0 && (
+          <li className="rounded-xl border border-dashed border-neutral-700 p-4 text-center text-xs text-neutral-500">
+            Nenhuma lanchonete encontrada.
+          </li>
+        )}
+      </ul>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-4 pb-6 sm:items-center">
+          <div className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-900 p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-bold text-white">Nova Lanchonete</h3>
+              <button
+                onClick={() => setShowModal(false)}
+                className="grid h-8 w-8 place-items-center rounded-full bg-neutral-800 text-neutral-400 hover:text-white"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <input
+                placeholder="Nome *"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white outline-none focus:border-[#e85d75]"
+              />
+              <textarea
+                placeholder="Descrição"
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={2}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white outline-none focus:border-[#e85d75] resize-none"
+              />
+              <input
+                placeholder="Localização / Endereço *"
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white outline-none focus:border-[#e85d75]"
+              />
+              <select
+                value={form.owner_id}
+                onChange={(e) => setForm({ ...form, owner_id: e.target.value })}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white outline-none focus:border-[#e85d75]"
+              >
+                <option value="">Selecionar proprietário (owner) *</option>
+                {owners.map((o) => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+              {owners.length === 0 && (
+                <p className="text-[10px] text-amber-400">
+                  Nenhum usuário com role "owner" encontrado. Promova um usuário primeiro.
+                </p>
+              )}
+              <input
+                placeholder="Categorias (separadas por vírgula)"
+                value={form.categories}
+                onChange={(e) => setForm({ ...form, categories: e.target.value })}
+                className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white outline-none focus:border-[#e85d75]"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-1 block text-[10px] text-neutral-500">Abre às</label>
+                  <input
+                    type="time"
+                    value={form.opening_time}
+                    onChange={(e) => setForm({ ...form, opening_time: e.target.value })}
+                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white outline-none focus:border-[#e85d75]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] text-neutral-500">Fecha às</label>
+                  <input
+                    type="time"
+                    value={form.closing_time}
+                    onChange={(e) => setForm({ ...form, closing_time: e.target.value })}
+                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white outline-none focus:border-[#e85d75]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleCreate}
+              disabled={creating}
+              className="mt-4 w-full rounded-xl bg-[#5d0a1a] py-3 text-sm font-bold text-white hover:bg-[#7a1022] disabled:opacity-50 transition"
+            >
+              {creating ? "Criando…" : "Criar Lanchonete"}
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }

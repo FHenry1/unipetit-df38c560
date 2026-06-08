@@ -113,6 +113,16 @@ interface AuthContextValue {
   updateProfile: (patch: { name?: string; phone?: string; address?: string }) => Promise<{ ok: boolean; error?: string }>;
   getOrderItems: (orderId: string) => Promise<{ name: string; price: number; quantity: number }[]>;
   refresh: () => Promise<void>;
+  adminDeleteSnackbar: (snackbarId: string) => Promise<void>;
+  adminCreateSnackbar: (data: {
+    name: string;
+    description: string;
+    location: string;
+    owner_id: string;
+    categories: string[];
+    opening_time?: string | null;
+    closing_time?: string | null;
+  }) => Promise<{ ok: boolean; error?: string }>;
 
 }
 
@@ -504,6 +514,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const adminDeleteSnackbar: AuthContextValue["adminDeleteSnackbar"] = async (snackbarId) => {
+    const { error } = await supabase.from("snackbars").delete().eq("id", snackbarId);
+    if (error) throw new Error(error.message);
+    await refresh();
+  };
+
+  const adminCreateSnackbar: AuthContextValue["adminCreateSnackbar"] = async (data) => {
+    const { error } = await supabase.from("snackbars").insert({
+      name: data.name,
+      description: data.description,
+      location: data.location,
+      owner_id: data.owner_id,
+      categories: data.categories,
+      opening_time: data.opening_time ?? null,
+      closing_time: data.closing_time ?? null,
+      rating: 0,
+      view_count: 0,
+    });
+    if (error) return { ok: false, error: error.message };
+    await refresh();
+    return { ok: true };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -536,6 +569,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateProfile,
         getOrderItems,
         refresh,
+        adminDeleteSnackbar,
+        adminCreateSnackbar,
       }}
 
     >
