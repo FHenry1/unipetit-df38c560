@@ -13,7 +13,15 @@ function AppShell() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/" });
+    if (loading) return;
+    if (!user) {
+      navigate({ to: "/" });
+      return;
+    }
+    // Redirect admin to /admin if landing on a non-admin app path
+    if (user.role === "admin" && !window.location.pathname.startsWith("/admin")) {
+      navigate({ to: "/admin" });
+    }
   }, [user, loading, navigate]);
 
   if (loading) {
@@ -26,17 +34,17 @@ function AppShell() {
 
   if (!user) return null;
 
-
   const isOwner = user.role === "owner";
+  const isAdmin = user.role === "admin";
 
   return (
     <div
-      className={`mx-auto min-h-screen max-w-md pb-20 ${
-        isOwner ? "bg-neutral-950 text-neutral-100" : ""
+      className={`mx-auto min-h-screen max-w-md ${isAdmin ? "" : "pb-20"} ${
+        isOwner || isAdmin ? "bg-neutral-950 text-neutral-100" : ""
       }`}
     >
       <Outlet />
-      {isOwner ? <OwnerBottomNav /> : <BottomNav />}
+      {isAdmin ? null : isOwner ? <OwnerBottomNav /> : <BottomNav />}
     </div>
   );
 }
