@@ -1,4 +1,4 @@
-import logoAsset from "@/assets/unipetit-logo.png.asset.json";
+import logoAsset from "@/assets/unipetit-logo-v2.png.asset.json";
 
 type LogoProps = {
   /** Optional fixed size in pixels. When omitted, the logo scales responsively. */
@@ -7,20 +7,21 @@ type LogoProps = {
 };
 
 export function Logo({ size }: LogoProps) {
-  // Responsive default: scales between 88px and 128px based on viewport width.
-  // Using inline style keeps aspect ratio and avoids distortion at any width.
   const style: React.CSSProperties = size
     ? { width: size, height: size }
     : { width: "clamp(88px, 22vw, 128px)", aspectRatio: "1 / 1", height: "auto" };
 
   return (
-    <div className="flex w-full justify-center">
+    <div className="flex w-full flex-col items-center justify-center gap-2">
       <img
         src={logoAsset.url}
         alt="UniPetit Logo"
         style={{ ...style, objectFit: "contain", display: "block", maxWidth: "100%" }}
         draggable={false}
       />
+      <span className="text-2xl font-extrabold tracking-wide text-white">
+        unipetit
+      </span>
     </div>
   );
 }
