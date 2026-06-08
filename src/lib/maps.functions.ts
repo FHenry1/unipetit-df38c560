@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_maps";
 
@@ -9,8 +10,28 @@ const inputSchema = z.object({
 });
 
 export const geocodeSnackbar = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => inputSchema.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Verify caller owns the snackbar (or is admin) before touching it.
+    const { data: snack, error: snackErr } = await supabase
+      .from("snackbars")
+      .select("id, owner_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (snackErr) throw new Error("Lookup failed");
+    if (!snack) throw new Error("Snackbar not found");
+
+    if (snack.owner_id !== userId) {
+      const { data: isAdmin } = await supabase.rpc("has_role", {
+        _user_id: userId,
+        _role: "admin",
+      });
+      if (!isAdmin) throw new Error("Forbidden");
+    }
+
     const lovableKey = process.env.LOVABLE_API_KEY;
     const gmKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!lovableKey || !gmKey) throw new Error("Maps credentials missing");
