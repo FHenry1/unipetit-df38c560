@@ -269,7 +269,7 @@ function FeaturedCard({
           e.preventDefault();
           void onFav(s.id);
         }}
-        className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white/90 backdrop-blur transition active:scale-90"
+        className="absolute left-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white/90 backdrop-blur transition active:scale-90"
         aria-label="Favoritar"
       >
         <Heart size={14} className={isFav ? "fill-[#5d0a1a] text-[#5d0a1a]" : "text-muted-foreground"} />
