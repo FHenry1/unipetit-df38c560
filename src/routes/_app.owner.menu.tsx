@@ -8,8 +8,8 @@ export const Route = createFileRoute("/_app/owner/menu")({
   component: OwnerMenu,
 });
 
-type ItemDraft = { name: string; description: string; price: string };
-const emptyDraft: ItemDraft = { name: "", description: "", price: "" };
+type ItemDraft = { name: string; description: string; price: string; category: string };
+const emptyDraft: ItemDraft = { name: "", description: "", price: "", category: "" };
 
 function OwnerMenu() {
   const {
@@ -29,19 +29,33 @@ function OwnerMenu() {
   const [deleteTarget, setDeleteTarget] = useState<MenuItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string>("__all");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+
+  const categories = useMemo(() => {
+    if (!mySnackbar) return [] as string[];
+    const set = new Set<string>();
+    mySnackbar.menu_items.forEach((m) => {
+      if (m.category && m.category.trim()) set.add(m.category.trim());
+    });
+    return Array.from(set).sort();
+  }, [mySnackbar]);
 
   const filtered = useMemo(() => {
     if (!mySnackbar) return [];
     const q = search.trim().toLowerCase();
-    if (!q) return mySnackbar.menu_items;
-    return mySnackbar.menu_items.filter(
+    let list = mySnackbar.menu_items;
+    if (activeCategory !== "__all") {
+      list = list.filter((m) => (m.category ?? "") === activeCategory);
+    }
+    if (!q) return list;
+    return list.filter(
       (m) =>
         m.name.toLowerCase().includes(q) ||
         (m.description ?? "").toLowerCase().includes(q),
     );
-  }, [mySnackbar, search]);
+  }, [mySnackbar, search, activeCategory]);
 
   if (!mySnackbar) {
     return (
@@ -62,6 +76,7 @@ function OwnerMenu() {
       name: m.name,
       description: m.description ?? "",
       price: m.price.toFixed(2).replace(".", ","),
+      category: m.category ?? "",
     });
     setModalItemId(m.id);
     setModalMode("edit");
@@ -79,6 +94,7 @@ function OwnerMenu() {
       name: itemDraft.name.trim(),
       description: itemDraft.description.trim(),
       price: parseFloat(itemDraft.price.replace(",", ".")) || 0,
+      category: itemDraft.category.trim() || null,
     };
     setSaving(true);
     try {
@@ -211,6 +227,15 @@ function OwnerMenu() {
             )}
           </label>
 
+          {categories.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <CategoryChip active={activeCategory === "__all"} label="Todos" onClick={() => setActiveCategory("__all")} />
+              {categories.map((c) => (
+                <CategoryChip key={c} active={activeCategory === c} label={c} onClick={() => setActiveCategory(c)} />
+              ))}
+            </div>
+          )}
+
           <ul className="mt-3 space-y-2">
             {mySnackbar.menu_items.length === 0 && (
               <li className="rounded-xl border border-dashed border-neutral-700 p-4 text-center text-xs text-neutral-500">
@@ -317,6 +342,11 @@ function OwnerMenu() {
               label="Preço (R$)"
               value={itemDraft.price}
               onChange={(v) => setItemDraft({ ...itemDraft, price: v })}
+            />
+            <Input
+              label="Categoria (ex: Hambúrgueres, Bebidas)"
+              value={itemDraft.category}
+              onChange={(v) => setItemDraft({ ...itemDraft, category: v })}
             />
             <div className="flex gap-2 pt-1">
               <button
@@ -447,5 +477,21 @@ function Input({
         className="mt-1 w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white focus:border-[#e85d75] focus:outline-none"
       />
     </label>
+  );
+}
+
+function CategoryChip({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
+        active
+          ? "bg-[#5d0a1a] text-white"
+          : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+      }`}
+    >
+      {label}
+    </button>
   );
 }

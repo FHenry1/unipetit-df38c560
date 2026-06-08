@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-type Screen = "selection" | "login" | "signup" | "forgot";
+type Screen = "selection" | "login" | "signup" | "forgot" | "check-email";
 
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
@@ -28,12 +28,16 @@ function Landing() {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [screen, setScreen] = useState<Screen>("selection");
+  const [pendingEmail, setPendingEmail] = useState<string>("");
   const [triggered, setTriggered] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (user) navigate({ to: user.role === "owner" ? "/owner" : "/home" });
+    if (user) {
+      const dest = user.role === "admin" ? "/admin" : user.role === "owner" ? "/owner" : "/home";
+      navigate({ to: dest });
+    }
   }, [user, navigate]);
 
   // Subtle parallax on pointer move (mobile-friendly: also tilts on device orientation if available)
@@ -196,7 +200,21 @@ function Landing() {
             onBack={() => setScreen("selection")}
             onSubmit={async (name, email, password) => {
               const res = await signup(name, email, password);
-              if (res.ok) navigate({ to: "/home" });
+              if (res.ok) {
+                setPendingEmail(email);
+                setScreen("check-email");
+              }
+              return res;
+            }}
+          />
+        )}
+        {screen === "check-email" && (
+          <CheckEmail
+            email={pendingEmail}
+            onBack={() => setScreen("login")}
+            onResend={async () => {
+              const res = await signup("Usuário", pendingEmail, Math.random().toString(36) + "Aa1!");
+              // best-effort resend; ignore "already registered" errors
               return res;
             }}
           />
@@ -745,5 +763,78 @@ function ForgotForm({
         ← Voltar
       </button>
     </form>
+  );
+}
+
+function CheckEmail({
+  email,
+  onBack,
+  onResend,
+}: {
+  email: string;
+  onBack: () => void;
+  onResend: () => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const [sending, setSending] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const handleResend = async () => {
+    setSending(true);
+    setMsg(null);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase.auth.resend({ type: "signup", email });
+      if (error) {
+        // fallback
+        await onResend();
+      }
+      setMsg("E-mail reenviado! Confira sua caixa de entrada.");
+    } catch {
+      setMsg("Não foi possível reenviar agora. Tente em alguns minutos.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div className="grid h-16 w-16 place-items-center rounded-full bg-[#5d0a1a]/10 text-[#5d0a1a]">
+        <Mail size={28} />
+      </div>
+      <h2 className="mt-4 text-2xl font-extrabold text-[#2a0a10]">
+        Verifique sua caixa de entrada
+      </h2>
+      <p className="mt-2 text-sm text-neutral-500">
+        Enviamos um link de confirmação para
+      </p>
+      <p className="mt-1 text-sm font-semibold text-[#5d0a1a] break-all">{email}</p>
+      <p className="mt-3 text-xs text-neutral-500 leading-relaxed">
+        Clique no link do e-mail para ativar sua conta. Não esqueça de conferir
+        a pasta de spam.
+      </p>
+
+      {msg && (
+        <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 ring-1 ring-emerald-100">
+          {msg}
+        </p>
+      )}
+
+      <button
+        type="button"
+        onClick={handleResend}
+        disabled={sending}
+        className="mt-6 w-full rounded-2xl border-2 border-[#5d0a1a] px-4 py-3 text-sm font-bold uppercase tracking-wider text-[#5d0a1a] transition hover:bg-[#5d0a1a]/5 disabled:opacity-60"
+      >
+        {sending ? "Enviando…" : "Reenviar e-mail"}
+      </button>
+
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-3 text-center text-xs font-semibold text-neutral-500 hover:text-[#5d0a1a]"
+      >
+        Já confirmei — fazer login
+      </button>
+    </div>
   );
 }

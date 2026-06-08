@@ -18,6 +18,7 @@ import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppOwnerRouteImport } from './routes/_app.owner'
 import { Route as AppMapRouteImport } from './routes/_app.map'
 import { Route as AppHomeRouteImport } from './routes/_app.home'
+import { Route as AppAdminRouteImport } from './routes/_app.admin'
 import { Route as AppSnackbarIdRouteImport } from './routes/_app.snackbar.$id'
 import { Route as AppOwnerReviewsRouteImport } from './routes/_app.owner.reviews'
 import { Route as AppOwnerProfileRouteImport } from './routes/_app.owner.profile'
@@ -68,6 +69,11 @@ const AppHomeRoute = AppHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSnackbarIdRoute = AppSnackbarIdRouteImport.update({
   id: '/snackbar/$id',
   path: '/snackbar/$id',
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin': typeof AppAdminRoute
   '/home': typeof AppHomeRoute
   '/map': typeof AppMapRoute
   '/owner': typeof AppOwnerRouteWithChildren
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin': typeof AppAdminRoute
   '/home': typeof AppHomeRoute
   '/map': typeof AppMapRoute
   '/owner': typeof AppOwnerRouteWithChildren
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_app/admin': typeof AppAdminRoute
   '/_app/home': typeof AppHomeRoute
   '/_app/map': typeof AppMapRoute
   '/_app/owner': typeof AppOwnerRouteWithChildren
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/reset-password'
+    | '/admin'
     | '/home'
     | '/map'
     | '/owner'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/reset-password'
+    | '/admin'
     | '/home'
     | '/map'
     | '/owner'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/forgot-password'
     | '/reset-password'
+    | '/_app/admin'
     | '/_app/home'
     | '/_app/map'
     | '/_app/owner'
@@ -262,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHomeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/admin': {
+      id: '/_app/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/snackbar/$id': {
       id: '/_app/snackbar/$id'
       path: '/snackbar/$id'
@@ -319,6 +338,7 @@ const AppOwnerRouteWithChildren = AppOwnerRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppAdminRoute: typeof AppAdminRoute
   AppHomeRoute: typeof AppHomeRoute
   AppMapRoute: typeof AppMapRoute
   AppOwnerRoute: typeof AppOwnerRouteWithChildren
@@ -328,6 +348,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAdminRoute: AppAdminRoute,
   AppHomeRoute: AppHomeRoute,
   AppMapRoute: AppMapRoute,
   AppOwnerRoute: AppOwnerRouteWithChildren,
