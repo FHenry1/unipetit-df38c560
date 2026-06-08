@@ -8,8 +8,8 @@ export const Route = createFileRoute("/_app/owner/menu")({
   component: OwnerMenu,
 });
 
-type ItemDraft = { name: string; description: string; price: string };
-const emptyDraft: ItemDraft = { name: "", description: "", price: "" };
+type ItemDraft = { name: string; description: string; price: string; category: string };
+const emptyDraft: ItemDraft = { name: "", description: "", price: "", category: "" };
 
 function OwnerMenu() {
   const {
@@ -29,19 +29,33 @@ function OwnerMenu() {
   const [deleteTarget, setDeleteTarget] = useState<MenuItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string>("__all");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+
+  const categories = useMemo(() => {
+    if (!mySnackbar) return [] as string[];
+    const set = new Set<string>();
+    mySnackbar.menu_items.forEach((m) => {
+      if (m.category && m.category.trim()) set.add(m.category.trim());
+    });
+    return Array.from(set).sort();
+  }, [mySnackbar]);
 
   const filtered = useMemo(() => {
     if (!mySnackbar) return [];
     const q = search.trim().toLowerCase();
-    if (!q) return mySnackbar.menu_items;
-    return mySnackbar.menu_items.filter(
+    let list = mySnackbar.menu_items;
+    if (activeCategory !== "__all") {
+      list = list.filter((m) => (m.category ?? "") === activeCategory);
+    }
+    if (!q) return list;
+    return list.filter(
       (m) =>
         m.name.toLowerCase().includes(q) ||
         (m.description ?? "").toLowerCase().includes(q),
     );
-  }, [mySnackbar, search]);
+  }, [mySnackbar, search, activeCategory]);
 
   if (!mySnackbar) {
     return (
@@ -62,6 +76,7 @@ function OwnerMenu() {
       name: m.name,
       description: m.description ?? "",
       price: m.price.toFixed(2).replace(".", ","),
+      category: m.category ?? "",
     });
     setModalItemId(m.id);
     setModalMode("edit");
@@ -79,6 +94,7 @@ function OwnerMenu() {
       name: itemDraft.name.trim(),
       description: itemDraft.description.trim(),
       price: parseFloat(itemDraft.price.replace(",", ".")) || 0,
+      category: itemDraft.category.trim() || null,
     };
     setSaving(true);
     try {
