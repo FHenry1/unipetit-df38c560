@@ -300,6 +300,9 @@ function ProfilePage() {
       </div>
 
       {showPwd && <ChangePasswordModal onClose={() => setShowPwd(false)} />}
+      {showOwnerModal && (
+        <BecomeOwnerModal userId={user.id} onClose={() => setShowOwnerModal(false)} />
+      )}
     </div>
   );
 }
