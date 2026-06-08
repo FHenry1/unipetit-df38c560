@@ -227,6 +227,15 @@ function OwnerMenu() {
             )}
           </label>
 
+          {categories.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <CategoryChip active={activeCategory === "__all"} label="Todos" onClick={() => setActiveCategory("__all")} />
+              {categories.map((c) => (
+                <CategoryChip key={c} active={activeCategory === c} label={c} onClick={() => setActiveCategory(c)} />
+              ))}
+            </div>
+          )}
+
           <ul className="mt-3 space-y-2">
             {mySnackbar.menu_items.length === 0 && (
               <li className="rounded-xl border border-dashed border-neutral-700 p-4 text-center text-xs text-neutral-500">
