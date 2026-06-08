@@ -170,44 +170,6 @@ function ProfilePage() {
               </ul>
             )}
 
-            {/* Histórico recente de pedidos */}
-            {myOrders.length > 0 && (
-              <div className="pt-2">
-                <h3 className="mb-2 flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  <Receipt size={12} /> Pedidos recentes
-                </h3>
-                <ul className="space-y-2">
-                  {myOrders.slice(0, 5).map((o) => {
-                    const sb = snackbars.find((s) => s.id === o.snackbar_id);
-                    const st = STATUS_LABEL[o.status] ?? STATUS_LABEL.pending;
-                    return (
-                      <li key={o.id} className="rounded-2xl bg-surface p-3 text-surface-foreground shadow-card">
-                        <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 shrink-0 rounded-xl bg-cover bg-center bg-muted" style={{ backgroundImage: sb ? `url(${sb.cover})` : undefined }} />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <h4 className="truncate text-sm font-semibold">{sb?.name ?? "Lanchonete"}</h4>
-                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${st.cls}`}>{st.label}</span>
-                            </div>
-                            <p className="mt-0.5 text-[11px] text-muted-foreground">
-                              {new Date(o.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} · R$ {o.total.toFixed(2)}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => onRepeat(o.id, o.snackbar_id)}
-                            disabled={repeating === o.id || !sb}
-                            className="flex shrink-0 items-center gap-1 rounded-lg bg-brand-soft px-2.5 py-1.5 text-[11px] font-semibold text-brand hover:bg-brand/10 disabled:opacity-60"
-                          >
-                            {repeating === o.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
-                            Repedir
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
           </section>
         )}
 
@@ -324,12 +286,11 @@ function ProfilePage() {
                   Torne-se dono no UniPetit, cadastre seu menu e alcance novos clientes na universidade.
                 </p>
                 <button
-                  onClick={onBecomeOwner}
-                  disabled={loadingOwner}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#5d0a1a] transition active:scale-[0.98] disabled:opacity-70"
+                  onClick={() => setShowOwnerModal(true)}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#5d0a1a] transition active:scale-[0.98]"
                 >
-                  {loadingOwner ? <Loader2 size={14} className="animate-spin" /> : <Store size={14} />}
-                  {loadingOwner ? "Ativando modo dono..." : "Tornar-se Dono de Lanchonete"}
+                  <Store size={14} />
+                  Tornar-se Dono de Lanchonete
                   <ChevronRight size={16} />
                 </button>
               </div>
