@@ -343,6 +343,11 @@ function OwnerMenu() {
               value={itemDraft.price}
               onChange={(v) => setItemDraft({ ...itemDraft, price: v })}
             />
+            <Input
+              label="Categoria (ex: Hambúrgueres, Bebidas)"
+              value={itemDraft.category}
+              onChange={(v) => setItemDraft({ ...itemDraft, category: v })}
+            />
             <div className="flex gap-2 pt-1">
               <button
                 onClick={closeModal}
