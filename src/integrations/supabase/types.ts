@@ -42,6 +42,7 @@ export type Database = {
       }
       menu_items: {
         Row: {
+          category: string | null
           created_at: string
           description: string
           id: string
@@ -53,6 +54,7 @@ export type Database = {
           snackbar_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           description?: string
           id?: string
@@ -64,6 +66,7 @@ export type Database = {
           snackbar_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           description?: string
           id?: string
@@ -163,6 +166,42 @@ export type Database = {
           },
         ]
       }
+      owner_applications: {
+        Row: {
+          business_name: string
+          created_at: string
+          document_url: string | null
+          id: string
+          notes: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_name?: string
+          created_at?: string
+          document_url?: string | null
+          id?: string
+          notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_name?: string
+          created_at?: string
+          document_url?: string | null
+          id?: string
+          notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -250,6 +289,7 @@ export type Database = {
       snackbars: {
         Row: {
           categories: string[]
+          closing_time: string | null
           cover: string | null
           created_at: string
           description: string
@@ -258,6 +298,7 @@ export type Database = {
           lng: number | null
           location: string
           name: string
+          opening_time: string | null
           owner_id: string
           rating: number
           updated_at: string
@@ -265,6 +306,7 @@ export type Database = {
         }
         Insert: {
           categories?: string[]
+          closing_time?: string | null
           cover?: string | null
           created_at?: string
           description?: string
@@ -273,6 +315,7 @@ export type Database = {
           lng?: number | null
           location?: string
           name?: string
+          opening_time?: string | null
           owner_id: string
           rating?: number
           updated_at?: string
@@ -280,6 +323,7 @@ export type Database = {
         }
         Update: {
           categories?: string[]
+          closing_time?: string | null
           cover?: string | null
           created_at?: string
           description?: string
@@ -288,6 +332,7 @@ export type Database = {
           lng?: number | null
           location?: string
           name?: string
+          opening_time?: string | null
           owner_id?: string
           rating?: number
           updated_at?: string
@@ -321,6 +366,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_approve_owner: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
+      admin_reject_owner: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
+      admin_revoke_owner: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       become_owner: { Args: never; Returns: string }
       exit_owner_mode: { Args: never; Returns: undefined }
       get_public_profiles: {
