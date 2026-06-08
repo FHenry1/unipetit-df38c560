@@ -16,11 +16,6 @@ function AppShell() {
     if (loading) return;
     if (!user) {
       navigate({ to: "/" });
-      return;
-    }
-    // Redirect admin to /admin if landing on a non-admin app path
-    if (user.role === "admin" && !window.location.pathname.startsWith("/admin")) {
-      navigate({ to: "/admin" });
     }
   }, [user, loading, navigate]);
 
