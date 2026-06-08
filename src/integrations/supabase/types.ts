@@ -388,6 +388,20 @@ export type Database = {
           name: string
         }[]
       }
+      get_visible_reviews: {
+        Args: never
+        Returns: {
+          comment: string
+          created_at: string
+          id: string
+          owner_reply: string
+          owner_reply_at: string
+          owner_seen: boolean
+          rating: number
+          snackbar_id: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
