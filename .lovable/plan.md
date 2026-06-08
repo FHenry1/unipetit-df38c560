@@ -1,60 +1,57 @@
-# Migração para autenticação real com Lovable Cloud
+# UniPetit Connect — Plano de Modificações
 
-## Objetivo
-Substituir o sistema de autenticação mockado (localStorage) por autenticação real do Lovable Cloud (Supabase Auth), com envio de e-mail de confirmação para redefinição de senha.
+Este é um conjunto grande de mudanças (3 blocos, ~15+ tarefas, várias migrations SQL, novo perfil de admin). Vou executar exatamente o que está no prompt, em ordem de dependência, mas o escopo é considerável. Estimativa: muitas edições de arquivos + 4 migrations + 1 rota nova.
 
-## Etapas
+## Ordem de execução
 
-### 1. Habilitar Lovable Cloud
-Provisiona backend (Postgres + Auth + envio de e-mails).
+### Fase 1 — Migrations SQL (precisam aprovação primeiro)
+1. `snackbars`: adicionar `opening_time`, `closing_time` (item 5.2)
+2. `menu_items`: adicionar `category` (item 11)
+3. `owner_applications`: tabela já existe — só ajustar se necessário (item 13)
+4. Policy admin para deletar reviews + RPC `admin_approve_owner` já existe (item 13-B/C)
 
-### 2. Criar schema no banco
-Migração SQL com:
-- `profiles` (id, name, avatar_url, role) — vinculada a `auth.users` via FK, criada por trigger no signup
-- `snackbars` (id, owner_id, name, description, location, rating, categories, cover)
-- `menu_items` (id, snackbar_id, name, price, description, image)
-- `favorites` (user_id, snackbar_id) — many-to-many
-- RLS em todas as tabelas + GRANTs para `authenticated`/`anon` conforme cada caso
-- Trigger `handle_new_user` para criar profile automaticamente
-- Seed inicial de algumas lanchonetes (opcional — manter algumas demos)
+### Fase 2 — Camada de dados (`src/lib/auth.tsx`)
+- Adicionar campos `opening_time`, `closing_time` à interface `SnackBar` + select
+- Adicionar `category` à interface `MenuItem` + addMenuItem/updateMenuItem
+- Ampliar `Role` para incluir `"admin"`
+- Atualizar `updateMySnackbar` para incluir horários
 
-### 3. Reescrever `src/lib/auth.tsx`
-- Usar `supabase.auth` (signUp, signInWithPassword, signOut, resetPasswordForEmail)
-- `onAuthStateChange` para manter sessão sincronizada
-- Hooks `useAuth()` mantendo a mesma API atual (user, login, signup, logout, mySnackbar, favorites…) para não quebrar páginas já existentes
-- Queries a snackbars/menu/favorites via Supabase
+### Fase 3 — Utils e Hooks
+- `src/lib/utils.ts`: adicionar `isSnackbarOpen()`
+- `src/hooks/use-user-location.ts`: novo, com `distanceKm()`
 
-### 4. Atualizar tela inicial (`src/routes/index.tsx`)
-- `ForgotForm` agora pede apenas o e-mail e chama `supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password' })`
-- Mostra mensagem "Enviamos um e-mail de confirmação. Clique no link para definir uma nova senha."
-- Login/Signup agora usam Supabase real
+### Fase 4 — Componentes compartilhados
+- `SnackBarCard.tsx`: remover descrição, adicionar status/distância, botão favorito
+- `FilterSheet.tsx`: nenhuma mudança (já funciona)
+- `BottomNav.tsx`: remover pedidos/carrinho se existir
+- `OwnerBottomNav.tsx`: confirmar Menu e Reviews
 
-### 5. Criar rota pública `/reset-password`
-- `src/routes/reset-password.tsx`
-- Detecta sessão de recovery vinda do link do e-mail
-- Formulário com nova senha + confirmação
-- Chama `supabase.auth.updateUser({ password })`
-- Redireciona para `/home` após sucesso
+### Fase 5 — Rotas de consumidor
+- `_app.home.tsx`: bg branco, unificar filtros com FilterSheet, remover endereço/descrição dos cards, adicionar status/distância
+- `_app.search.tsx`: passar `isFav` e `onFav` ao SnackBarCard
+- `_app.profile.tsx`: remover seção "Meus pedidos"; modal de solicitação para "Torne-se dono"
+- `_app.snackbar.$id.tsx`: remover qualquer UI de pedidos; remover editar/excluir review próprio; iframe Maps em vez de link
 
-### 6. Adaptar páginas existentes
-- `_app.home.tsx`, `_app.owner.tsx`, `_app.profile.tsx`, `_app.snackbar.$id.tsx`, etc. — substituir leituras do estado mockado por queries Supabase via o novo `useAuth`
-- Manter a API do hook estável para minimizar mudanças
+### Fase 6 — Index/cadastro
+- `index.tsx`: tela "verifique sua caixa de entrada" após signup; reenviar e-mail; redirect admin → /admin
 
-## Detalhes técnicos
+### Fase 7 — Rotas de dono
+- `_app.owner.tsx`: remover gráficos/receita/pedidos, remover card superior duplicado
+- `_app.owner.orders.tsx`: redirect para /owner
+- `_app.owner.profile.tsx`: campos de horário; subtitle "Vendedor"
+- `_app.owner.menu.tsx`: tabs por categoria + select de categoria por item
 
-- Provider de e-mail: Lovable Cloud Emails (built-in, sem configuração extra para começar — usa domínio padrão)
-- Template do e-mail de reset: padrão do Supabase Auth (pode ser customizado depois)
-- RLS:
-  - `profiles`: select público (para mostrar nome do dono); update apenas do próprio
-  - `snackbars`: select público; insert/update/delete apenas pelo `owner_id`
-  - `menu_items`: select público; insert/update/delete apenas pelo dono da snackbar (via `EXISTS`)
-  - `favorites`: select/insert/delete apenas do próprio `user_id`
-- Função `has_role` + tabela `user_roles` separada para o papel `owner` (segue boas práticas — não armazenar role em `profiles`)
+### Fase 8 — Novo Admin
+- `_app.admin.tsx`: nova rota com 3 abas (Usuários, Avaliações, Relatórios)
+- `_app.tsx`: não redirecionar admin para /home
 
-## Riscos / observações
+## Notas técnicas
 
-- Usuários mockados atuais no localStorage (`user@unipetit.com` etc.) deixarão de existir; será preciso recriar conta
-- O e-mail de reset chega na caixa do usuário; em dev o domínio padrão funciona, mas marcar como spam é possível
-- Trabalho é amplo (toca todas as páginas do app), feito em uma única passada
+- TanStack Router auto-gera `routeTree.gen.ts` — não editar manualmente.
+- Migrations usam `IF NOT EXISTS`. A tabela `owner_applications` e a função `admin_approve_owner` já existem no DB (confirmado no contexto). Só adicionar policy de delete em reviews para admin se faltar.
+- Não tocar em `src/integrations/supabase/client.ts` nem `types.ts` (auto-gen — types serão regenerados após migrations).
+- Mantendo `placeOrder`/`cancelOrder` em auth.tsx até confirmar que não há outras referências.
 
-Posso prosseguir?
+## Confirmação
+
+Posso prosseguir? Por ser muito grande, vou executar tudo de uma vez, mas vai exigir várias aprovações de migration ao longo do caminho.
