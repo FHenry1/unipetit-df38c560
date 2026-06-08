@@ -20,7 +20,7 @@ export function Logo({ size }: LogoProps) {
         draggable={false}
       />
       <span className="text-2xl font-extrabold tracking-wide text-white">
-        unipetit
+        UNIPETIT
       </span>
     </div>
   );
