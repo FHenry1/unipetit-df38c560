@@ -4,6 +4,7 @@ import {
   BarChart3,
   LogOut,
   MessageSquare,
+  Plus,
   Shield,
   ShieldCheck,
   ShieldOff,
@@ -11,6 +12,7 @@ import {
   Store,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +22,7 @@ export const Route = createFileRoute("/_app/admin")({
   component: AdminPage,
 });
 
-type Tab = "users" | "reviews" | "reports";
+type Tab = "users" | "reviews" | "snackbars" | "reports";
 
 interface AdminUser {
   id: string;
@@ -30,7 +32,7 @@ interface AdminUser {
 }
 
 function AdminPage() {
-  const { user, snackbars, reviews, logout, refresh, deleteReview } = useAuth();
+  const { user, snackbars, reviews, logout, refresh, deleteReview, adminDeleteSnackbar, adminCreateSnackbar } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("users");
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -125,9 +127,10 @@ function AdminPage() {
 
       <div className="-mt-6 px-5 space-y-5">
         {/* Tabs */}
-        <nav className="grid grid-cols-3 gap-1.5 rounded-2xl bg-neutral-900 p-1.5 border border-neutral-800">
+        <nav className="grid grid-cols-4 gap-1.5 rounded-2xl bg-neutral-900 p-1.5 border border-neutral-800">
           <AdminTab active={tab === "users"} onClick={() => setTab("users")} icon={<Users size={14} />} label="Usuários" />
           <AdminTab active={tab === "reviews"} onClick={() => setTab("reviews")} icon={<MessageSquare size={14} />} label="Avaliações" />
+          <AdminTab active={tab === "snackbars"} onClick={() => setTab("snackbars")} icon={<Store size={14} />} label="Lanchonetes" />
           <AdminTab active={tab === "reports"} onClick={() => setTab("reports")} icon={<BarChart3 size={14} />} label="Relatórios" />
         </nav>
 
@@ -141,6 +144,15 @@ function AdminPage() {
         )}
         {tab === "reviews" && (
           <ReviewsTab reviews={reviews} snackbars={snackbars} onDelete={removeReview} />
+        )}
+        {tab === "snackbars" && (
+          <SnackbarsTab
+            snackbars={snackbars}
+            onDelete={adminDeleteSnackbar}
+            onCreate={adminCreateSnackbar}
+            users={users}
+            loadUsers={loadUsers}
+          />
         )}
         {tab === "reports" && <ReportsTab snackbars={snackbars} reviews={reviews} />}
       </div>
