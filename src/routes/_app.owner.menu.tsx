@@ -479,3 +479,19 @@ function Input({
     </label>
   );
 }
+
+function CategoryChip({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
+        active
+          ? "bg-[#5d0a1a] text-white"
+          : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
