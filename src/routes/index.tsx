@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import logoAsset from "@/assets/unipetit-logo.png.asset.json";
+import logoAsset from "@/assets/unipetit-logo-v2.png.asset.json";
 
 export const Route = createFileRoute("/")({
   component: Landing,
