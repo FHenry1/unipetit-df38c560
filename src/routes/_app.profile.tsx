@@ -467,3 +467,141 @@ function EmptyCard({
     </div>
   );
 }
+
+function BecomeOwnerModal({ userId, onClose }: { userId: string; onClose: () => void }) {
+  const [businessName, setBusinessName] = useState("");
+  const [documentUrl, setDocumentUrl] = useState("");
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<"none" | "pending" | "approved" | "rejected">("none");
+  const [sent, setSent] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("owner_applications")
+        .select("status, business_name, document_url, notes")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (data) {
+        setStatus((data as any).status);
+        setBusinessName((data as any).business_name ?? "");
+        setDocumentUrl((data as any).document_url ?? "");
+        setNotes((data as any).notes ?? "");
+      }
+      setLoading(false);
+    })();
+  }, [userId]);
+
+  const submit = async () => {
+    setErr(null);
+    if (!businessName.trim()) {
+      setErr("Informe o nome do estabelecimento");
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.from("owner_applications").upsert(
+      {
+        user_id: userId,
+        business_name: businessName.trim(),
+        document_url: documentUrl.trim() || null,
+        notes: notes.trim() || null,
+        status: "pending",
+      } as any,
+      { onConflict: "user_id" },
+    );
+    setSubmitting(false);
+    if (error) {
+      setErr(error.message);
+      return;
+    }
+    setSent(true);
+    setStatus("pending");
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-t-3xl bg-surface p-5 text-surface-foreground shadow-2xl sm:rounded-2xl"
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-base font-bold">Tornar-se dono</h3>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted">
+            <X size={16} />
+          </button>
+        </div>
+
+        {loading ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Carregando…</p>
+        ) : sent || status === "pending" ? (
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-surface-foreground">
+              {sent
+                ? "Solicitação enviada! Nossa equipe analisará em até 2 dias úteis."
+                : "Sua solicitação está em análise."}
+            </p>
+            <button onClick={onClose} className="w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-white">
+              Fechar
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <label className="block">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Nome do estabelecimento *
+              </span>
+              <input
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                maxLength={120}
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+                placeholder="Lanchonete X"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                URL do documento comprobatório
+              </span>
+              <input
+                value={documentUrl}
+                onChange={(e) => setDocumentUrl(e.target.value)}
+                maxLength={500}
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+                placeholder="https://..."
+              />
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Observação (opcional)
+              </span>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                maxLength={500}
+                rows={3}
+                className="mt-1 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+              />
+            </label>
+            {status === "rejected" && (
+              <p className="text-xs text-amber-600">
+                Sua solicitação anterior foi rejeitada. Você pode reenviar com novos dados.
+              </p>
+            )}
+            {err && <p className="text-xs font-semibold text-rose-600">{err}</p>}
+            <button
+              onClick={submit}
+              disabled={submitting}
+              className="w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {submitting ? "Enviando…" : "Enviar solicitação"}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
