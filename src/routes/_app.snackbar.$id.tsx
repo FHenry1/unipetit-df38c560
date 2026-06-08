@@ -341,24 +341,6 @@ function ReviewsTab({
                   at={myReview.owner_reply_at}
                 />
               )}
-              <div className="mt-3 flex gap-2">
-                <button
-                  onClick={() => setEditing(true)}
-                  className="flex-1 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-primary-foreground transition hover:opacity-90 active:scale-95"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={async () => {
-                    await deleteReview(myReview.id);
-                    toast.success("Avaliação removida");
-                  }}
-                  className="grid h-9 w-9 place-items-center rounded-lg border border-border text-muted-foreground transition hover:border-rose-500 hover:text-rose-500"
-                  aria-label="Excluir avaliação"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
             </div>
           ) : (
             <div className="mt-2 space-y-3">
@@ -492,38 +474,45 @@ function OwnerReplyBlock({ reply, at }: { reply: string; at: string | null }) {
 /* ---------------- INFO ---------------- */
 
 function InfoTab({ snackbar }: { snackbar: ReturnType<typeof useAuth>["snackbars"][number] }) {
-  const mapsHref =
+  const mapSrc =
     snackbar.lat != null && snackbar.lng != null
-      ? `https://www.google.com/maps/search/?api=1&query=${snackbar.lat},${snackbar.lng}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(snackbar.location)}`;
+      ? `https://www.google.com/maps?q=${snackbar.lat},${snackbar.lng}&output=embed`
+      : `https://www.google.com/maps?q=${encodeURIComponent(snackbar.location)}&output=embed`;
 
-  const hours = [
-    { d: "Segunda – Sexta", h: "11h – 23h" },
-    { d: "Sábado", h: "11h – 00h" },
-    { d: "Domingo", h: "12h – 22h" },
-  ];
+  const hours =
+    snackbar.opening_time && snackbar.closing_time
+      ? [
+          {
+            d: "Todos os dias",
+            h: `${snackbar.opening_time.slice(0, 5)} – ${snackbar.closing_time.slice(0, 5)}`,
+          },
+        ]
+      : [
+          { d: "Segunda – Sexta", h: "11h – 23h" },
+          { d: "Sábado", h: "11h – 00h" },
+          { d: "Domingo", h: "12h – 22h" },
+        ];
 
   return (
     <div className="space-y-4 text-sm">
-      <a
-        href={mapsHref}
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center gap-3 rounded-xl border border-border bg-background p-3.5 transition hover:border-brand/40 hover:shadow-sm"
-      >
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-soft text-brand">
-          <Navigation size={16} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-white">
-            Endereço
-          </p>
-          <p className="truncate font-medium text-white">
+      <div className="rounded-2xl border border-border bg-background p-3.5">
+        <div className="flex items-center gap-2">
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-soft text-brand">
+            <Navigation size={14} />
+          </span>
+          <p className="min-w-0 flex-1 truncate text-sm font-medium text-white">
             {snackbar.location}
           </p>
         </div>
-        <span className="text-xs font-semibold text-brand">Abrir</span>
-      </a>
+        <iframe
+          title="Localização no mapa"
+          className="mt-3 w-full h-56 rounded-2xl border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          src={mapSrc}
+        />
+      </div>
+
 
       <div className="rounded-xl border border-border bg-background p-3.5">
         <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-white">

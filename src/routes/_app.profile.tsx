@@ -21,7 +21,7 @@ import {
   User as UserIcon,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/lib/auth";
@@ -43,20 +43,20 @@ function ProfilePage() {
   const {
     user,
     logout,
-    becomeOwner,
     snackbars,
-    orders,
     reviews,
     updateProfile,
-    getOrderItems,
-    refresh,
   } = useAuth();
   const navigate = useNavigate();
-  const [loadingOwner, setLoadingOwner] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
-  const [repeating, setRepeating] = useState<string | null>(null);
+  const [showOwnerModal, setShowOwnerModal] = useState(false);
   const [tab, setTab] = useState<"favorites" | "reviews" | "settings">("favorites");
 
+  // Admin → painel admin
+  if (user?.role === "admin") {
+    navigate({ to: "/admin", replace: true });
+    return null;
+  }
   // Owners têm um perfil dedicado em /owner/profile
   if (user?.role === "owner") {
     navigate({ to: "/owner/profile", replace: true });
@@ -67,55 +67,6 @@ function ProfilePage() {
 
   const favs = snackbars.filter((s) => user.favorites.includes(s.id));
   const myReviews = reviews.filter((r) => r.user_id === user.id);
-  const myOrders = orders.slice(0, 10);
-
-  const onBecomeOwner = async () => {
-    if (loadingOwner) return;
-    setLoadingOwner(true);
-    try {
-      await becomeOwner();
-      navigate({ to: "/owner/profile" });
-    } finally {
-      setLoadingOwner(false);
-    }
-  };
-
-
-  const onRepeat = async (orderId: string, snackbarId: string) => {
-    setRepeating(orderId);
-    try {
-      const items = await getOrderItems(orderId);
-      if (items.length === 0) {
-        navigate({ to: "/snackbar/$id", params: { id: snackbarId } });
-        return;
-      }
-      const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
-      const { data: newOrder, error } = await supabase
-        .from("orders")
-        .insert({
-          snackbar_id: snackbarId,
-          user_id: user.id,
-          customer_name: user.name,
-          total,
-          status: "pending",
-        })
-        .select("id")
-        .single();
-      if (error || !newOrder) throw error;
-      await supabase.from("order_items").insert(
-        items.map((i) => ({
-          order_id: newOrder.id,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
-        })),
-      );
-      await refresh();
-      navigate({ to: "/snackbar/$id", params: { id: snackbarId } });
-    } finally {
-      setRepeating(null);
-    }
-  };
 
   const tabs = [
     { id: "favorites" as const, label: "Favoritos", icon: Heart, count: favs.length },
@@ -148,10 +99,9 @@ function ProfilePage() {
         </div>
 
         {/* Stats */}
-        <div className="mt-6 grid grid-cols-3 gap-3">
+        <div className="mt-6 grid grid-cols-2 gap-3">
           <StatCard icon={<Heart size={16} className="text-rose-500" />} label="Favoritos" value={favs.length} />
           <StatCard icon={<Star size={16} className="text-amber-500" />} label="Avaliações" value={myReviews.length} />
-          <StatCard icon={<Receipt size={16} className="text-brand" />} label="Pedidos" value={orders.length} />
         </div>
       </div>
 
@@ -220,44 +170,6 @@ function ProfilePage() {
               </ul>
             )}
 
-            {/* Histórico recente de pedidos */}
-            {myOrders.length > 0 && (
-              <div className="pt-2">
-                <h3 className="mb-2 flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  <Receipt size={12} /> Pedidos recentes
-                </h3>
-                <ul className="space-y-2">
-                  {myOrders.slice(0, 5).map((o) => {
-                    const sb = snackbars.find((s) => s.id === o.snackbar_id);
-                    const st = STATUS_LABEL[o.status] ?? STATUS_LABEL.pending;
-                    return (
-                      <li key={o.id} className="rounded-2xl bg-surface p-3 text-surface-foreground shadow-card">
-                        <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 shrink-0 rounded-xl bg-cover bg-center bg-muted" style={{ backgroundImage: sb ? `url(${sb.cover})` : undefined }} />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <h4 className="truncate text-sm font-semibold">{sb?.name ?? "Lanchonete"}</h4>
-                              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${st.cls}`}>{st.label}</span>
-                            </div>
-                            <p className="mt-0.5 text-[11px] text-muted-foreground">
-                              {new Date(o.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })} · R$ {o.total.toFixed(2)}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => onRepeat(o.id, o.snackbar_id)}
-                            disabled={repeating === o.id || !sb}
-                            className="flex shrink-0 items-center gap-1 rounded-lg bg-brand-soft px-2.5 py-1.5 text-[11px] font-semibold text-brand hover:bg-brand/10 disabled:opacity-60"
-                          >
-                            {repeating === o.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
-                            Repedir
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
           </section>
         )}
 
@@ -374,12 +286,11 @@ function ProfilePage() {
                   Torne-se dono no UniPetit, cadastre seu menu e alcance novos clientes na universidade.
                 </p>
                 <button
-                  onClick={onBecomeOwner}
-                  disabled={loadingOwner}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#5d0a1a] transition active:scale-[0.98] disabled:opacity-70"
+                  onClick={() => setShowOwnerModal(true)}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#5d0a1a] transition active:scale-[0.98]"
                 >
-                  {loadingOwner ? <Loader2 size={14} className="animate-spin" /> : <Store size={14} />}
-                  {loadingOwner ? "Ativando modo dono..." : "Tornar-se Dono de Lanchonete"}
+                  <Store size={14} />
+                  Tornar-se Dono de Lanchonete
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -389,6 +300,9 @@ function ProfilePage() {
       </div>
 
       {showPwd && <ChangePasswordModal onClose={() => setShowPwd(false)} />}
+      {showOwnerModal && (
+        <BecomeOwnerModal userId={user.id} onClose={() => setShowOwnerModal(false)} />
+      )}
     </div>
   );
 }
@@ -553,3 +467,141 @@ function EmptyCard({
     </div>
   );
 }
+
+function BecomeOwnerModal({ userId, onClose }: { userId: string; onClose: () => void }) {
+  const [businessName, setBusinessName] = useState("");
+  const [documentUrl, setDocumentUrl] = useState("");
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<"none" | "pending" | "approved" | "rejected">("none");
+  const [sent, setSent] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("owner_applications")
+        .select("status, business_name, document_url, notes")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (data) {
+        setStatus((data as any).status);
+        setBusinessName((data as any).business_name ?? "");
+        setDocumentUrl((data as any).document_url ?? "");
+        setNotes((data as any).notes ?? "");
+      }
+      setLoading(false);
+    })();
+  }, [userId]);
+
+  const submit = async () => {
+    setErr(null);
+    if (!businessName.trim()) {
+      setErr("Informe o nome do estabelecimento");
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.from("owner_applications").upsert(
+      {
+        user_id: userId,
+        business_name: businessName.trim(),
+        document_url: documentUrl.trim() || null,
+        notes: notes.trim() || null,
+        status: "pending",
+      } as any,
+      { onConflict: "user_id" },
+    );
+    setSubmitting(false);
+    if (error) {
+      setErr(error.message);
+      return;
+    }
+    setSent(true);
+    setStatus("pending");
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-t-3xl bg-surface p-5 text-surface-foreground shadow-2xl sm:rounded-2xl"
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-base font-bold">Tornar-se dono</h3>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted">
+            <X size={16} />
+          </button>
+        </div>
+
+        {loading ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Carregando…</p>
+        ) : sent || status === "pending" ? (
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-surface-foreground">
+              {sent
+                ? "Solicitação enviada! Nossa equipe analisará em até 2 dias úteis."
+                : "Sua solicitação está em análise."}
+            </p>
+            <button onClick={onClose} className="w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-white">
+              Fechar
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <label className="block">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Nome do estabelecimento *
+              </span>
+              <input
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                maxLength={120}
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+                placeholder="Lanchonete X"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                URL do documento comprobatório
+              </span>
+              <input
+                value={documentUrl}
+                onChange={(e) => setDocumentUrl(e.target.value)}
+                maxLength={500}
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+                placeholder="https://..."
+              />
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Observação (opcional)
+              </span>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                maxLength={500}
+                rows={3}
+                className="mt-1 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+              />
+            </label>
+            {status === "rejected" && (
+              <p className="text-xs text-amber-600">
+                Sua solicitação anterior foi rejeitada. Você pode reenviar com novos dados.
+              </p>
+            )}
+            {err && <p className="text-xs font-semibold text-rose-600">{err}</p>}
+            <button
+              onClick={submit}
+              disabled={submitting}
+              className="w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {submitting ? "Enviando…" : "Enviar solicitação"}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
