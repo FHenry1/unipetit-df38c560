@@ -43,20 +43,20 @@ function ProfilePage() {
   const {
     user,
     logout,
-    becomeOwner,
     snackbars,
-    orders,
     reviews,
     updateProfile,
-    getOrderItems,
-    refresh,
   } = useAuth();
   const navigate = useNavigate();
-  const [loadingOwner, setLoadingOwner] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
-  const [repeating, setRepeating] = useState<string | null>(null);
+  const [showOwnerModal, setShowOwnerModal] = useState(false);
   const [tab, setTab] = useState<"favorites" | "reviews" | "settings">("favorites");
 
+  // Admin → painel admin
+  if (user?.role === "admin") {
+    navigate({ to: "/admin", replace: true });
+    return null;
+  }
   // Owners têm um perfil dedicado em /owner/profile
   if (user?.role === "owner") {
     navigate({ to: "/owner/profile", replace: true });
@@ -67,55 +67,6 @@ function ProfilePage() {
 
   const favs = snackbars.filter((s) => user.favorites.includes(s.id));
   const myReviews = reviews.filter((r) => r.user_id === user.id);
-  const myOrders = orders.slice(0, 10);
-
-  const onBecomeOwner = async () => {
-    if (loadingOwner) return;
-    setLoadingOwner(true);
-    try {
-      await becomeOwner();
-      navigate({ to: "/owner/profile" });
-    } finally {
-      setLoadingOwner(false);
-    }
-  };
-
-
-  const onRepeat = async (orderId: string, snackbarId: string) => {
-    setRepeating(orderId);
-    try {
-      const items = await getOrderItems(orderId);
-      if (items.length === 0) {
-        navigate({ to: "/snackbar/$id", params: { id: snackbarId } });
-        return;
-      }
-      const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
-      const { data: newOrder, error } = await supabase
-        .from("orders")
-        .insert({
-          snackbar_id: snackbarId,
-          user_id: user.id,
-          customer_name: user.name,
-          total,
-          status: "pending",
-        })
-        .select("id")
-        .single();
-      if (error || !newOrder) throw error;
-      await supabase.from("order_items").insert(
-        items.map((i) => ({
-          order_id: newOrder.id,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
-        })),
-      );
-      await refresh();
-      navigate({ to: "/snackbar/$id", params: { id: snackbarId } });
-    } finally {
-      setRepeating(null);
-    }
-  };
 
   const tabs = [
     { id: "favorites" as const, label: "Favoritos", icon: Heart, count: favs.length },
@@ -148,10 +99,9 @@ function ProfilePage() {
         </div>
 
         {/* Stats */}
-        <div className="mt-6 grid grid-cols-3 gap-3">
+        <div className="mt-6 grid grid-cols-2 gap-3">
           <StatCard icon={<Heart size={16} className="text-rose-500" />} label="Favoritos" value={favs.length} />
           <StatCard icon={<Star size={16} className="text-amber-500" />} label="Avaliações" value={myReviews.length} />
-          <StatCard icon={<Receipt size={16} className="text-brand" />} label="Pedidos" value={orders.length} />
         </div>
       </div>
 
