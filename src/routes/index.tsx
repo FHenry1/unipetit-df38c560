@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-type Screen = "selection" | "login" | "signup" | "forgot";
+type Screen = "selection" | "login" | "signup" | "forgot" | "check-email";
 
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
@@ -28,12 +28,16 @@ function Landing() {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [screen, setScreen] = useState<Screen>("selection");
+  const [pendingEmail, setPendingEmail] = useState<string>("");
   const [triggered, setTriggered] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (user) navigate({ to: user.role === "owner" ? "/owner" : "/home" });
+    if (user) {
+      const dest = user.role === "admin" ? "/admin" : user.role === "owner" ? "/owner" : "/home";
+      navigate({ to: dest });
+    }
   }, [user, navigate]);
 
   // Subtle parallax on pointer move (mobile-friendly: also tilts on device orientation if available)
@@ -196,7 +200,21 @@ function Landing() {
             onBack={() => setScreen("selection")}
             onSubmit={async (name, email, password) => {
               const res = await signup(name, email, password);
-              if (res.ok) navigate({ to: "/home" });
+              if (res.ok) {
+                setPendingEmail(email);
+                setScreen("check-email");
+              }
+              return res;
+            }}
+          />
+        )}
+        {screen === "check-email" && (
+          <CheckEmail
+            email={pendingEmail}
+            onBack={() => setScreen("login")}
+            onResend={async () => {
+              const res = await signup("Usuário", pendingEmail, Math.random().toString(36) + "Aa1!");
+              // best-effort resend; ignore "already registered" errors
               return res;
             }}
           />
