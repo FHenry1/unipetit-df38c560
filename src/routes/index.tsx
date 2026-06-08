@@ -130,7 +130,7 @@ function Landing() {
           className="w-[min(70vw,260px)] object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.45)]"
         />
         <span className="mt-2 text-3xl font-extrabold tracking-wide text-white">
-          unipetit
+          UNIPETIT
         </span>
         <h1 className="mt-6 text-center text-[clamp(1.75rem,7vw,2.5rem)] font-extrabold leading-tight tracking-tight text-white">
           Seu lanche,
@@ -140,8 +140,7 @@ function Landing() {
           </span>
         </h1>
         <p className="mt-3 max-w-xs text-center text-sm leading-relaxed text-white/75">
-          Descubra lanchonetes próximas, faça pedidos em segundos e acompanhe tudo
-          em tempo real.
+          Descubra lanchonetes próximas em segundos.
         </p>
 
         <div className="mt-8 grid w-full grid-cols-3 gap-2.5">
