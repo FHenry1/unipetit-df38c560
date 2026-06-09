@@ -1,5 +1,13 @@
 import { MapPin, Star, X } from "lucide-react";
+import { useEffect } from "react";
 import type { SnackBar } from "@/lib/auth";
+
+const FALLBACK_COVER =
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&q=80";
+
+function handleImgError(e: React.SyntheticEvent<HTMLImageElement>) {
+  e.currentTarget.style.display = "none";
+}
 
 export function MenuPreview({
   snackbar,
@@ -10,6 +18,18 @@ export function MenuPreview({
   open: boolean;
   onClose: () => void;
 }) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
   const accent = snackbar.accent_color || "#e85d75";
   const banner = snackbar.banner_url || snackbar.cover;
@@ -47,14 +67,17 @@ export function MenuPreview({
         <div className="flex-1 overflow-y-auto bg-white">
           {/* Hero */}
           <div
-            className="relative h-52 w-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${banner})` }}
+            className="relative h-52 w-full bg-cover bg-center bg-neutral-200"
+            style={{
+              backgroundImage: `url(${banner}), url(${FALLBACK_COVER})`,
+            }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             {snackbar.logo_url && (
               <img
                 src={snackbar.logo_url}
                 alt=""
+                onError={handleImgError}
                 className="absolute bottom-3 left-4 h-14 w-14 rounded-xl border-2 border-white/30 object-cover shadow-lg"
               />
             )}
@@ -128,6 +151,8 @@ export function MenuPreview({
                       <img
                         src={m.image_url}
                         alt={m.name}
+                        onError={handleImgError}
+                        loading="lazy"
                         className="h-20 w-20 shrink-0 rounded-xl object-cover"
                       />
                     )}

@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Check, ChevronDown, Copy, Eye, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { OwnerHeader } from "@/components/OwnerHeader";
 import { MenuPreview } from "@/components/MenuPreview";
 import { useAuth, type MenuItem } from "@/lib/auth";
@@ -101,19 +102,35 @@ function OwnerMenu() {
   };
 
   const submitItem = async () => {
-    if (!itemDraft.name.trim()) return;
+    const name = itemDraft.name.trim();
+    if (!name) {
+      toast.error("Informe o nome do item");
+      return;
+    }
+    const price = parseFloat(itemDraft.price.replace(",", "."));
+    if (!Number.isFinite(price) || price < 0) {
+      toast.error("Preço inválido");
+      return;
+    }
     const payload = {
-      name: itemDraft.name.trim(),
+      name,
       description: itemDraft.description.trim(),
-      price: parseFloat(itemDraft.price.replace(",", ".")) || 0,
+      price,
       category: itemDraft.category.trim() || null,
       image_url: itemDraft.image_url.trim() || null,
     };
     setSaving(true);
     try {
-      if (modalMode === "add") await addMenuItem(payload);
-      else if (modalMode === "edit" && modalItemId) await updateMenuItem(modalItemId, payload);
+      if (modalMode === "add") {
+        await addMenuItem(payload);
+        toast.success("Item adicionado");
+      } else if (modalMode === "edit" && modalItemId) {
+        await updateMenuItem(modalItemId, payload);
+        toast.success("Item atualizado");
+      }
       closeModal();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar item");
     } finally {
       setSaving(false);
     }
@@ -124,7 +141,10 @@ function OwnerMenu() {
     setSaving(true);
     try {
       await removeMenuItem(deleteTarget.id);
+      toast.success("Item removido");
       setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao remover");
     } finally {
       setSaving(false);
     }
@@ -148,9 +168,20 @@ function OwnerMenu() {
   };
 
   const activeCount = mySnackbar.menu_items.filter((m) => m.is_active).length;
+  const anyModalOpen = modalMode !== null || deleteTarget !== null || previewOpen;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (modalMode) closeModal();
+      else if (deleteTarget) setDeleteTarget(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [modalMode, deleteTarget]);
 
   return (
-    <div className="pb-6">
+    <div className="pb-24">
       <OwnerHeader
         title="Gerenciar Cardápio"
         subtitle="Modo dono"
@@ -314,9 +345,12 @@ function OwnerMenu() {
                   <GripVertical size={14} />
                 </span>
                 {m.image_url && (
-                  <div
-                    className="h-10 w-10 shrink-0 rounded-lg bg-cover bg-center border border-neutral-800"
-                    style={{ backgroundImage: `url(${m.image_url})` }}
+                  <img
+                    src={m.image_url}
+                    alt=""
+                    loading="lazy"
+                    onError={(e) => (e.currentTarget.style.display = "none")}
+                    className="h-10 w-10 shrink-0 rounded-lg border border-neutral-800 object-cover"
                   />
                 )}
                 <div className="min-w-0 flex-1">
@@ -461,14 +495,16 @@ function OwnerMenu() {
         </Modal>
       )}
 
-      {/* Floating preview toggle */}
-      <button
-        onClick={() => setPreviewOpen(true)}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-[#5d0a1a] px-4 py-3 text-sm font-bold text-white shadow-2xl ring-2 ring-white/10 transition hover:bg-[#6e0e22] active:scale-95"
-        aria-label="Pré-visualizar cardápio"
-      >
-        <Eye size={16} /> Visualizar
-      </button>
+      {/* Floating preview toggle — hide while any overlay is open */}
+      {!anyModalOpen && (
+        <button
+          onClick={() => setPreviewOpen(true)}
+          className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-[#5d0a1a] px-4 py-3 text-sm font-bold text-white shadow-2xl ring-2 ring-white/10 transition hover:bg-[#6e0e22] active:scale-95"
+          aria-label="Pré-visualizar cardápio"
+        >
+          <Eye size={16} /> Visualizar
+        </button>
+      )}
 
       <MenuPreview
         snackbar={mySnackbar}
