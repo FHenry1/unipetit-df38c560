@@ -174,7 +174,7 @@ function SnackBarDetail() {
         </div>
 
         <div className="mt-5 animate-fade-in" key={tab}>
-          {tab === "menu" && <MenuList items={activeMenu} />}
+          {tab === "menu" && <MenuList items={activeMenu} accentColor={s.accent_color} />}
           {tab === "reviews" && (
             <ReviewsTab
               snackbarId={s.id}
