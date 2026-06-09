@@ -17,7 +17,7 @@ import { ptBR } from "date-fns/locale";
 import { useAuth, type SnackBar } from "@/lib/auth";
 import { OwnerHeader } from "@/components/OwnerHeader";
 
-export const Route = createFileRoute("/_app/owner")({
+export const Route = createFileRoute("/_app/owner/")({
   component: OwnerDashboard,
 });
 
