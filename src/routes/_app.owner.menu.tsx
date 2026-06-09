@@ -63,7 +63,13 @@ function OwnerMenu() {
   if (!mySnackbar) {
     return (
       <div className="px-5 pt-10 text-sm text-neutral-400">
-        Crie sua lanchonete primeiro.
+        Esta área é exclusiva para donos de lanchonete.{" "}
+        <button
+          onClick={() => navigate({ to: "/owner" })}
+          className="text-[#e85d75] underline"
+        >
+          Voltar
+        </button>
       </div>
     );
   }
