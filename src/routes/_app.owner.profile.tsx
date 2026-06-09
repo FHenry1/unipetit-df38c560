@@ -297,3 +297,108 @@ function PasswordModal({
     </div>
   );
 }
+
+function AppearancePanel({
+  snackbar,
+  onSave,
+}: {
+  snackbar: { accent_color: string; logo_url: string | null; banner_url: string | null };
+  onSave: (patch: { accent_color?: string; logo_url?: string | null; banner_url?: string | null }) => Promise<void>;
+}) {
+  const [accentColor, setAccentColor] = useState(snackbar.accent_color ?? "#e85d75");
+  const [logoUrl, setLogoUrl] = useState(snackbar.logo_url ?? "");
+  const [bannerUrl, setBannerUrl] = useState(snackbar.banner_url ?? "");
+  const [saving, setSaving] = useState(false);
+  const presets = ["#e85d75", "#f97316", "#22c55e", "#3b82f6", "#a855f7", "#eab308", "#14b8a6", "#ef4444"];
+
+  return (
+    <div className="space-y-4 rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+      <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-400">
+        Aparência da lanchonete
+      </h3>
+
+      <div>
+        <span className="text-[11px] font-medium text-neutral-400">Cor de destaque</span>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {presets.map((color) => (
+            <button
+              key={color}
+              onClick={() => setAccentColor(color)}
+              style={{ backgroundColor: color }}
+              className={`h-8 w-8 rounded-full transition active:scale-90 ${
+                accentColor === color ? "ring-2 ring-white ring-offset-2 ring-offset-neutral-900" : ""
+              }`}
+              aria-label={color}
+            />
+          ))}
+          <label
+            className="flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-neutral-700 px-3 text-[11px] text-neutral-300 hover:border-neutral-500"
+            title="Cor personalizada"
+          >
+            <Palette size={12} />
+            <input
+              type="color"
+              value={accentColor}
+              onChange={(e) => setAccentColor(e.target.value)}
+              className="sr-only"
+            />
+            {accentColor}
+          </label>
+        </div>
+        <div
+          className="mt-3 flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white"
+          style={{ backgroundColor: accentColor }}
+        >
+          <Store size={14} /> Preview do botão de destaque
+        </div>
+      </div>
+
+      <label className="block">
+        <span className="text-[11px] font-medium text-neutral-400">URL do logo (opcional)</span>
+        <input
+          type="url"
+          value={logoUrl}
+          onChange={(e) => setLogoUrl(e.target.value)}
+          placeholder="https://..."
+          className="mt-1 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white outline-none focus:border-[#e85d75]"
+        />
+        {logoUrl && (
+          <img src={logoUrl} alt="Logo" className="mt-2 h-16 w-16 rounded-xl border border-neutral-700 object-cover" />
+        )}
+      </label>
+
+      <label className="block">
+        <span className="text-[11px] font-medium text-neutral-400">URL do banner (opcional)</span>
+        <input
+          type="url"
+          value={bannerUrl}
+          onChange={(e) => setBannerUrl(e.target.value)}
+          placeholder="https://..."
+          className="mt-1 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white outline-none focus:border-[#e85d75]"
+        />
+        {bannerUrl && (
+          <div
+            className="mt-2 h-24 w-full rounded-xl border border-neutral-700 bg-cover bg-center"
+            style={{ backgroundImage: `url(${bannerUrl})` }}
+          />
+        )}
+      </label>
+
+      <button
+        onClick={async () => {
+          setSaving(true);
+          try {
+            await onSave({ accent_color: accentColor, logo_url: logoUrl || null, banner_url: bannerUrl || null });
+          } finally {
+            setSaving(false);
+          }
+        }}
+        disabled={saving}
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5d0a1a] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+      >
+        {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+        Salvar aparência
+      </button>
+    </div>
+  );
+}
