@@ -73,7 +73,7 @@ function SnackBarDetail() {
       {/* Hero */}
       <div
         className="relative h-64 w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${s.cover})` }}
+        style={{ backgroundImage: `url(${s.banner_url ?? s.cover})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
         <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-4">
