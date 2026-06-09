@@ -12,6 +12,7 @@ type ItemDraft = { name: string; description: string; price: string; category: s
 const emptyDraft: ItemDraft = { name: "", description: "", price: "", category: "", image_url: "" };
 
 function OwnerMenu() {
+  const navigate = useNavigate();
   const {
     mySnackbar,
     updateMySnackbar,
