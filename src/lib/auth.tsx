@@ -385,9 +385,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateMySnackbar = async (patch: Partial<SnackBar>) => {
     if (!mySnackbar) return;
-    const { menu_items: _omit, ...rest } = patch;
+    const { menu_items: _omit, snackbar_categories: _omit2, ...rest } = patch;
     void _omit;
-    await supabase.from("snackbars").update(rest).eq("id", mySnackbar.id);
+    void _omit2;
+    await supabase.from("snackbars").update(rest as any).eq("id", mySnackbar.id);
     await loadSnackbars();
   };
 
