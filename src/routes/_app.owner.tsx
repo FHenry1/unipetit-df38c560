@@ -340,7 +340,7 @@ function TabLink({
   label,
   badge,
 }: {
-  to: "/owner" | "/owner/menu" | "/owner/reviews";
+  to: "/owner" | "/owner/reviews";
   active: boolean;
   icon: React.ReactNode;
   label: string;
