@@ -67,14 +67,17 @@ export function MenuPreview({
         <div className="flex-1 overflow-y-auto bg-white">
           {/* Hero */}
           <div
-            className="relative h-52 w-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${banner})` }}
+            className="relative h-52 w-full bg-cover bg-center bg-neutral-200"
+            style={{
+              backgroundImage: `url(${banner}), url(${FALLBACK_COVER})`,
+            }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             {snackbar.logo_url && (
               <img
                 src={snackbar.logo_url}
                 alt=""
+                onError={handleImgError}
                 className="absolute bottom-3 left-4 h-14 w-14 rounded-xl border-2 border-white/30 object-cover shadow-lg"
               />
             )}
