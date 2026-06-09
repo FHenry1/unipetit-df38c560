@@ -39,11 +39,9 @@ function OwnerMenu() {
 
   const categories = useMemo(() => {
     if (!mySnackbar) return [] as string[];
-    const set = new Set<string>();
-    mySnackbar.menu_items.forEach((m) => {
-      if (m.category && m.category.trim()) set.add(m.category.trim());
-    });
-    return Array.from(set).sort();
+    return [...mySnackbar.snackbar_categories]
+      .sort((a, b) => a.position - b.position)
+      .map((c) => c.name);
   }, [mySnackbar]);
 
   const filtered = useMemo(() => {
