@@ -542,3 +542,139 @@ function CategoryChip({ active, label, onClick }: { active: boolean; label: stri
     </button>
   );
 }
+
+function CategoriesManager({
+  items,
+  onAdd,
+  onRename,
+  onDelete,
+}: {
+  items: { id: string; name: string; position: number }[];
+  onAdd: (name: string) => Promise<void>;
+  onRename: (id: string, newName: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [newName, setNewName] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const sorted = [...items].sort((a, b) => a.position - b.position);
+
+  const submitNew = async () => {
+    if (!newName.trim() || busy) return;
+    setBusy(true);
+    try {
+      await onAdd(newName);
+      setNewName("");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitRename = async (id: string) => {
+    if (!editingValue.trim() || busy) return;
+    setBusy(true);
+    try {
+      await onRename(id, editingValue);
+      setEditingId(null);
+      setEditingValue("");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <details className="group mt-3 rounded-xl border border-neutral-800 bg-neutral-950">
+      <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-xs font-semibold text-neutral-300 hover:text-white">
+        <span>Categorias ({items.length})</span>
+        <ChevronDown size={14} className="transition group-open:rotate-180" />
+      </summary>
+      <div className="space-y-2 px-4 pb-4">
+        {sorted.length === 0 && (
+          <p className="text-[11px] text-neutral-500">Nenhuma categoria ainda.</p>
+        )}
+        {sorted.map((c) => (
+          <div key={c.id} className="flex items-center gap-2">
+            {editingId === c.id ? (
+              <>
+                <input
+                  autoFocus
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") submitRename(c.id);
+                    if (e.key === "Escape") {
+                      setEditingId(null);
+                      setEditingValue("");
+                    }
+                  }}
+                  className="flex-1 rounded-lg bg-neutral-900 border border-neutral-700 px-2 py-1 text-sm text-white focus:border-[#e85d75] focus:outline-none"
+                />
+                <button
+                  onClick={() => submitRename(c.id)}
+                  className="grid h-7 w-7 place-items-center rounded-lg bg-[#5d0a1a] text-white"
+                  aria-label="Salvar"
+                >
+                  <Check size={12} />
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingId(null);
+                    setEditingValue("");
+                  }}
+                  className="grid h-7 w-7 place-items-center rounded-lg bg-neutral-800 text-neutral-300"
+                  aria-label="Cancelar"
+                >
+                  <X size={12} />
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 truncate text-sm text-white">{c.name}</span>
+                <button
+                  onClick={() => {
+                    setEditingId(c.id);
+                    setEditingValue(c.name);
+                  }}
+                  className="grid h-7 w-7 place-items-center rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                  aria-label="Renomear"
+                >
+                  <Pencil size={12} />
+                </button>
+                <button
+                  onClick={async () => {
+                    if (window.confirm(`Excluir a categoria "${c.name}"? Os itens dela ficarão sem categoria.`)) {
+                      await onDelete(c.id);
+                    }
+                  }}
+                  className="grid h-7 w-7 place-items-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                  aria-label="Excluir"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submitNew();
+            }}
+            placeholder="Nova categoria"
+            className="flex-1 rounded-lg bg-neutral-900 border border-neutral-800 px-3 py-1.5 text-sm text-white focus:border-[#e85d75] focus:outline-none"
+          />
+          <button
+            onClick={submitNew}
+            disabled={busy || !newName.trim()}
+            className="rounded-lg bg-[#5d0a1a] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            Adicionar
+          </button>
+        </div>
+      </div>
+    </details>
+  );
+}
