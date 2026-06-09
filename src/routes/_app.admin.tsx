@@ -2,6 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
+  Bell,
+  Check,
+  Inbox,
   LogOut,
   MessageSquare,
   Plus,
@@ -22,7 +25,19 @@ export const Route = createFileRoute("/_app/admin")({
   component: AdminPage,
 });
 
-type Tab = "users" | "reviews" | "snackbars" | "reports";
+type Tab = "users" | "applications" | "reviews" | "snackbars" | "reports";
+
+interface OwnerApplication {
+  id: string;
+  user_id: string;
+  business_name: string;
+  document_url: string | null;
+  notes: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  user_name?: string;
+}
 
 interface AdminUser {
   id: string;
@@ -37,12 +52,78 @@ function AdminPage() {
   const [tab, setTab] = useState<Tab>("users");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [applications, setApplications] = useState<OwnerApplication[]>([]);
+  const [loadingApps, setLoadingApps] = useState(false);
 
   useEffect(() => {
     if (user && user.role !== "admin") {
       navigate({ to: user.role === "owner" ? "/owner" : "/home" });
     }
   }, [user, navigate]);
+
+  const pendingApps = useMemo(
+    () => applications.filter((a) => a.status === "pending"),
+    [applications],
+  );
+
+  const loadApplications = async () => {
+    setLoadingApps(true);
+    try {
+      const { data: apps, error } = await supabase
+        .from("owner_applications")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const list = (apps ?? []) as OwnerApplication[];
+      const userIds = Array.from(new Set(list.map((a) => a.user_id)));
+      if (userIds.length) {
+        const { data: profs } = await supabase.rpc("get_public_profiles", { _ids: userIds });
+        const nameById = new Map<string, string>(
+          (profs ?? []).map((p: any) => [p.id, p.name ?? "Usuário"]),
+        );
+        list.forEach((a) => {
+          a.user_name = nameById.get(a.user_id) ?? "Usuário";
+        });
+      }
+      setApplications(list);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao carregar solicitações");
+    } finally {
+      setLoadingApps(false);
+    }
+  };
+
+  // Realtime: notify admin when an owner application is created/updated
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    void loadApplications();
+    const channel = supabase
+      .channel("owner-applications-admin")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "owner_applications" },
+        (payload: any) => {
+          void loadApplications();
+          if (payload.eventType === "INSERT" && payload.new?.status === "pending") {
+            toast.info("Nova solicitação para se tornar dono!", {
+              action: { label: "Ver", onClick: () => setTab("applications") },
+            });
+          } else if (
+            payload.eventType === "UPDATE" &&
+            payload.old?.status !== "pending" &&
+            payload.new?.status === "pending"
+          ) {
+            toast.info("Solicitação de dono reenviada", {
+              action: { label: "Ver", onClick: () => setTab("applications") },
+            });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const loadUsers = async () => {
     setLoadingUsers(true);
