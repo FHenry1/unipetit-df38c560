@@ -396,31 +396,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadSnackbars();
   };
 
+  // Helper: patch a snackbar in local state immediately for instant UI feedback
+  const patchMySnackbar = (patch: (s: SnackBar) => SnackBar) => {
+    setSnackbars((prev) =>
+      prev.map((s) => (mySnackbar && s.id === mySnackbar.id ? patch(s) : s)),
+    );
+  };
+
   const addMenuItem: AuthContextValue["addMenuItem"] = async (item) => {
     if (!mySnackbar) return;
     const nextPosition =
       mySnackbar.menu_items.reduce((max, m) => Math.max(max, m.position), -1) + 1;
-    await supabase.from("menu_items").insert({
-      snackbar_id: mySnackbar.id,
-      name: item.name,
-      description: item.description,
-      price: item.price,
-      is_active: true,
-      position: nextPosition,
-      category: item.category ?? null,
-      image_url: item.image_url ?? null,
-    } as any);
-    await loadSnackbars();
+    const { data, error } = await supabase
+      .from("menu_items")
+      .insert({
+        snackbar_id: mySnackbar.id,
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        is_active: true,
+        position: nextPosition,
+        category: item.category ?? null,
+        image_url: item.image_url ?? null,
+      } as any)
+      .select()
+      .single();
+    if (error) {
+      await loadSnackbars();
+      throw error;
+    }
+    const m: any = data;
+    patchMySnackbar((s) => ({
+      ...s,
+      menu_items: [
+        ...s.menu_items,
+        {
+          id: m.id,
+          name: m.name,
+          description: m.description,
+          price: Number(m.price),
+          is_active: m.is_active ?? true,
+          position: m.position ?? nextPosition,
+          category: m.category ?? null,
+          image_url: m.image_url ?? null,
+        },
+      ],
+    }));
   };
 
   const removeMenuItem = async (itemId: string) => {
-    await supabase.from("menu_items").delete().eq("id", itemId);
-    await loadSnackbars();
+    patchMySnackbar((s) => ({
+      ...s,
+      menu_items: s.menu_items.filter((m) => m.id !== itemId),
+    }));
+    const { error } = await supabase.from("menu_items").delete().eq("id", itemId);
+    if (error) await loadSnackbars();
   };
 
   const updateMenuItem: AuthContextValue["updateMenuItem"] = async (itemId, patch) => {
-    await supabase.from("menu_items").update(patch as any).eq("id", itemId);
-    await loadSnackbars();
+    patchMySnackbar((s) => ({
+      ...s,
+      menu_items: s.menu_items.map((m) =>
+        m.id === itemId ? { ...m, ...(patch as Partial<MenuItem>) } : m,
+      ),
+    }));
+    const { error } = await supabase.from("menu_items").update(patch as any).eq("id", itemId);
+    if (error) await loadSnackbars();
   };
 
   const duplicateMenuItem: AuthContextValue["duplicateMenuItem"] = async (itemId) => {
@@ -429,17 +470,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!original) return;
     const nextPos =
       mySnackbar.menu_items.reduce((max, m) => Math.max(max, m.position), -1) + 1;
-    await supabase.from("menu_items").insert({
-      snackbar_id: mySnackbar.id,
-      name: `${original.name} (cópia)`,
-      description: original.description,
-      price: original.price,
-      is_active: false,
-      position: nextPos,
-      category: original.category ?? null,
-      image_url: original.image_url ?? null,
-    } as any);
-    await loadSnackbars();
+    const { data, error } = await supabase
+      .from("menu_items")
+      .insert({
+        snackbar_id: mySnackbar.id,
+        name: `${original.name} (cópia)`,
+        description: original.description,
+        price: original.price,
+        is_active: false,
+        position: nextPos,
+        category: original.category ?? null,
+        image_url: original.image_url ?? null,
+      } as any)
+      .select()
+      .single();
+    if (error) {
+      await loadSnackbars();
+      throw error;
+    }
+    const m: any = data;
+    patchMySnackbar((s) => ({
+      ...s,
+      menu_items: [
+        ...s.menu_items,
+        {
+          id: m.id,
+          name: m.name,
+          description: m.description,
+          price: Number(m.price),
+          is_active: m.is_active ?? false,
+          position: m.position ?? nextPos,
+          category: m.category ?? null,
+          image_url: m.image_url ?? null,
+        },
+      ],
+    }));
   };
 
   const addCategory: AuthContextValue["addCategory"] = async (name) => {
@@ -447,36 +512,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const trimmed = name.trim();
     if (!trimmed) return;
     const nextPos = mySnackbar.snackbar_categories.length;
-    await supabase.from("snackbar_categories").insert({
-      snackbar_id: mySnackbar.id,
-      name: trimmed,
-      position: nextPos,
-    } as any);
-    await loadSnackbars();
+    const { data, error } = await supabase
+      .from("snackbar_categories")
+      .insert({ snackbar_id: mySnackbar.id, name: trimmed, position: nextPos } as any)
+      .select()
+      .single();
+    if (error) {
+      await loadSnackbars();
+      throw error;
+    }
+    const c: any = data;
+    patchMySnackbar((s) => ({
+      ...s,
+      snackbar_categories: [
+        ...s.snackbar_categories,
+        { id: c.id, snackbar_id: c.snackbar_id, name: c.name, position: c.position },
+      ],
+    }));
   };
 
   const renameCategory: AuthContextValue["renameCategory"] = async (id, newName) => {
     const trimmed = newName.trim();
     if (!trimmed) return;
     const cat = mySnackbar?.snackbar_categories.find((c) => c.id === id);
-    await supabase.from("snackbar_categories").update({ name: trimmed } as any).eq("id", id);
-    if (cat && mySnackbar) {
-      await supabase.from("menu_items").update({ category: trimmed } as any)
-        .eq("snackbar_id", mySnackbar.id).eq("category", cat.name);
+    const oldName = cat?.name;
+    patchMySnackbar((s) => ({
+      ...s,
+      snackbar_categories: s.snackbar_categories.map((c) =>
+        c.id === id ? { ...c, name: trimmed } : c,
+      ),
+      menu_items: s.menu_items.map((m) =>
+        oldName && m.category === oldName ? { ...m, category: trimmed } : m,
+      ),
+    }));
+    const { error } = await supabase
+      .from("snackbar_categories")
+      .update({ name: trimmed } as any)
+      .eq("id", id);
+    if (error) {
+      await loadSnackbars();
+      return;
     }
-    await loadSnackbars();
+    if (oldName && mySnackbar) {
+      await supabase
+        .from("menu_items")
+        .update({ category: trimmed } as any)
+        .eq("snackbar_id", mySnackbar.id)
+        .eq("category", oldName);
+    }
   };
 
   const deleteCategory: AuthContextValue["deleteCategory"] = async (id) => {
     if (!mySnackbar) return;
     const cat = mySnackbar.snackbar_categories.find((c) => c.id === id);
-    if (cat) {
-      await supabase.from("menu_items").update({ category: null } as any)
-        .eq("snackbar_id", mySnackbar.id).eq("category", cat.name);
+    const oldName = cat?.name;
+    patchMySnackbar((s) => ({
+      ...s,
+      snackbar_categories: s.snackbar_categories.filter((c) => c.id !== id),
+      menu_items: s.menu_items.map((m) =>
+        oldName && m.category === oldName ? { ...m, category: null } : m,
+      ),
+    }));
+    if (oldName) {
+      await supabase
+        .from("menu_items")
+        .update({ category: null } as any)
+        .eq("snackbar_id", mySnackbar.id)
+        .eq("category", oldName);
     }
-    await supabase.from("snackbar_categories").delete().eq("id", id);
-    await loadSnackbars();
+    const { error } = await supabase.from("snackbar_categories").delete().eq("id", id);
+    if (error) await loadSnackbars();
   };
+
 
   const toggleMenuItemActive: AuthContextValue["toggleMenuItemActive"] = async (itemId) => {
     if (!mySnackbar) return;
