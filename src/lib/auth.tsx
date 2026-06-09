@@ -153,10 +153,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadSnackbars = useCallback(async () => {
     const { data: sbs } = await supabase
       .from("snackbars")
-      .select("*")
+      .select("*, snackbar_categories(id, snackbar_id, name, position)")
       .order("created_at", { ascending: false });
     const { data: items } = await supabase.from("menu_items").select("*");
-    const list: SnackBar[] = (sbs ?? []).map((s) => ({
+    const list: SnackBar[] = (sbs ?? []).map((s: any) => ({
       id: s.id,
       owner_id: s.owner_id,
       name: s.name,
@@ -169,19 +169,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       lng: s.lng != null ? Number(s.lng) : null,
       menu_items: (items ?? [])
         .filter((m) => m.snackbar_id === s.id)
-        .map((m) => ({
+        .map((m: any) => ({
           id: m.id,
           name: m.name,
           description: m.description,
           price: Number(m.price),
-          is_active: (m as { is_active?: boolean }).is_active ?? true,
-          position: (m as { position?: number }).position ?? 0,
-          category: (m as { category?: string | null }).category ?? null,
+          is_active: m.is_active ?? true,
+          position: m.position ?? 0,
+          category: m.category ?? null,
+          image_url: m.image_url ?? null,
         }))
         .sort((a, b) => a.position - b.position),
-      view_count: (s as { view_count?: number }).view_count ?? 0,
-      opening_time: (s as { opening_time?: string | null }).opening_time ?? null,
-      closing_time: (s as { closing_time?: string | null }).closing_time ?? null,
+      view_count: s.view_count ?? 0,
+      opening_time: s.opening_time ?? null,
+      closing_time: s.closing_time ?? null,
+      accent_color: s.accent_color ?? "#e85d75",
+      logo_url: s.logo_url ?? null,
+      banner_url: s.banner_url ?? null,
+      snackbar_categories: (s.snackbar_categories ?? []) as SnackBarCategory[],
     }));
     setSnackbars(list);
   }, []);
