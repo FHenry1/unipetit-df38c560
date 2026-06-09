@@ -345,9 +345,12 @@ function OwnerMenu() {
                   <GripVertical size={14} />
                 </span>
                 {m.image_url && (
-                  <div
-                    className="h-10 w-10 shrink-0 rounded-lg bg-cover bg-center border border-neutral-800"
-                    style={{ backgroundImage: `url(${m.image_url})` }}
+                  <img
+                    src={m.image_url}
+                    alt=""
+                    loading="lazy"
+                    onError={(e) => (e.currentTarget.style.display = "none")}
+                    className="h-10 w-10 shrink-0 rounded-lg border border-neutral-800 object-cover"
                   />
                 )}
                 <div className="min-w-0 flex-1">
@@ -492,14 +495,16 @@ function OwnerMenu() {
         </Modal>
       )}
 
-      {/* Floating preview toggle */}
-      <button
-        onClick={() => setPreviewOpen(true)}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-[#5d0a1a] px-4 py-3 text-sm font-bold text-white shadow-2xl ring-2 ring-white/10 transition hover:bg-[#6e0e22] active:scale-95"
-        aria-label="Pré-visualizar cardápio"
-      >
-        <Eye size={16} /> Visualizar
-      </button>
+      {/* Floating preview toggle — hide while any overlay is open */}
+      {!anyModalOpen && (
+        <button
+          onClick={() => setPreviewOpen(true)}
+          className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-[#5d0a1a] px-4 py-3 text-sm font-bold text-white shadow-2xl ring-2 ring-white/10 transition hover:bg-[#6e0e22] active:scale-95"
+          aria-label="Pré-visualizar cardápio"
+        >
+          <Eye size={16} /> Visualizar
+        </button>
+      )}
 
       <MenuPreview
         snackbar={mySnackbar}
