@@ -213,7 +213,7 @@ function ProfilePage() {
                         </span>
                       </div>
                       {r.comment && (
-                        <p className="mt-2 text-sm leading-relaxed text-foreground/90">"{r.comment}"</p>
+                        <p className="mt-2 text-sm leading-relaxed text-white">"{r.comment}"</p>
                       )}
                       {r.owner_reply && (
                         <div className="mt-3 rounded-xl border-l-2 border-brand bg-brand-soft/50 px-3 py-2">
