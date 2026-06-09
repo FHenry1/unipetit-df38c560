@@ -151,6 +151,8 @@ export function MenuPreview({
                       <img
                         src={m.image_url}
                         alt={m.name}
+                        onError={handleImgError}
+                        loading="lazy"
                         className="h-20 w-20 shrink-0 rounded-xl object-cover"
                       />
                     )}
