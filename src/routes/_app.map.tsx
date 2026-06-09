@@ -233,7 +233,7 @@ function MapPage() {
                   <MapPin size={16} />
                 </button>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{s.name}</p>
+                  <p className="truncate text-sm font-semibold text-black">{s.name}</p>
                   <p className="truncate text-xs text-muted-foreground">{s.location}</p>
                 </div>
                 <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold">
