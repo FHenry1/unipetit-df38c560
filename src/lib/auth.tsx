@@ -19,8 +19,15 @@ export interface MenuItem {
   is_active: boolean;
   position: number;
   category?: string | null;
+  image_url?: string | null;
 }
 
+export interface SnackBarCategory {
+  id: string;
+  snackbar_id: string;
+  name: string;
+  position: number;
+}
 
 export interface SnackBar {
   id: string;
@@ -37,6 +44,10 @@ export interface SnackBar {
   view_count: number;
   opening_time: string | null;
   closing_time: string | null;
+  accent_color: string;
+  logo_url: string | null;
+  banner_url: string | null;
+  snackbar_categories: SnackBarCategory[];
 }
 
 export interface Review {
