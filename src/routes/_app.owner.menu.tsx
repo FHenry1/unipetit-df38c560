@@ -20,6 +20,10 @@ function OwnerMenu() {
     updateMenuItem,
     toggleMenuItemActive,
     reorderMenuItems,
+    duplicateMenuItem,
+    addCategory,
+    renameCategory,
+    deleteCategory,
   } = useAuth();
   const [editingInfo, setEditingInfo] = useState(false);
   const [infoDraft, setInfoDraft] = useState(mySnackbar);
