@@ -168,9 +168,20 @@ function OwnerMenu() {
   };
 
   const activeCount = mySnackbar.menu_items.filter((m) => m.is_active).length;
+  const anyModalOpen = modalMode !== null || deleteTarget !== null || previewOpen;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (modalMode) closeModal();
+      else if (deleteTarget) setDeleteTarget(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [modalMode, deleteTarget]);
 
   return (
-    <div className="pb-6">
+    <div className="pb-24">
       <OwnerHeader
         title="Gerenciar Cardápio"
         subtitle="Modo dono"
