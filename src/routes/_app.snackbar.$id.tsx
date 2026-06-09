@@ -128,8 +128,8 @@ function SnackBarDetail() {
       </div>
 
       <div className="-mt-6 rounded-t-3xl bg-surface px-5 pb-6 pt-5 text-surface-foreground">
-        <h1 className="text-2xl font-extrabold tracking-tight text-white">{s.name}</h1>
-        <p className="mt-1 flex items-center gap-1 text-xs text-white/80">
+        <h1 className="text-2xl font-extrabold tracking-tight">{s.name}</h1>
+        <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
           <MapPin size={12} /> {s.location}
         </p>
 
@@ -146,7 +146,7 @@ function SnackBarDetail() {
           </div>
         )}
 
-        <p className="mt-4 text-sm leading-relaxed text-white/90">
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
           {s.description}
         </p>
 
@@ -217,9 +217,9 @@ function MenuList({
           style={{ animation: `fade-in 0.3s ease-out ${i * 0.04}s both` }}
         >
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">{m.name}</p>
+            <p className="truncate text-sm font-semibold">{m.name}</p>
             {m.description && (
-              <p className="mt-0.5 line-clamp-2 text-xs text-white/80">
+              <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                 {m.description}
               </p>
             )}

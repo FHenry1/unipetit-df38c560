@@ -312,7 +312,7 @@ function SnackCard({
     <Link
       to="/snackbar/$id"
       params={{ id: s.id }}
-      className="group relative flex overflow-hidden rounded-2xl bg-neutral-900 text-white shadow-card ring-1 ring-neutral-800 transition active:scale-[0.99] sm:flex-col"
+      className="group relative flex overflow-hidden rounded-2xl bg-white text-neutral-900 shadow-card ring-1 ring-neutral-100 transition active:scale-[0.99] sm:flex-col"
     >
       <div
         className="h-24 w-28 shrink-0 bg-cover bg-center sm:h-32 sm:w-full"
@@ -331,7 +331,7 @@ function SnackCard({
       <div className="flex flex-1 flex-col justify-between p-3">
         <div>
           <div className="flex items-start justify-between gap-2">
-            <h3 className="text-sm font-semibold leading-tight text-white">{s.name}</h3>
+            <h3 className="text-sm font-semibold leading-tight">{s.name}</h3>
             <div className="flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold">
               <Star size={11} className="fill-amber-500 text-amber-500" />
               {s.rating.toFixed(1)}
