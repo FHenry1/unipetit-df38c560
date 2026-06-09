@@ -392,8 +392,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { menu_items: _omit, snackbar_categories: _omit2, ...rest } = patch;
     void _omit;
     void _omit2;
-    await supabase.from("snackbars").update(rest as any).eq("id", mySnackbar.id);
-    await loadSnackbars();
+    setSnackbars((prev) =>
+      prev.map((s) => (s.id === mySnackbar.id ? { ...s, ...(rest as Partial<SnackBar>) } : s)),
+    );
+    const { error } = await supabase
+      .from("snackbars")
+      .update(rest as any)
+      .eq("id", mySnackbar.id);
+    if (error) await loadSnackbars();
   };
 
   // Helper: patch a snackbar in local state immediately for instant UI feedback
