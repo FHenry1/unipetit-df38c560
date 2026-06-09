@@ -109,6 +109,14 @@ function SnackBarDetail() {
           </div>
         </div>
 
+        {s.logo_url && (
+          <img
+            src={s.logo_url}
+            alt={`Logo ${s.name}`}
+            className="absolute bottom-3 left-4 h-14 w-14 rounded-xl border-2 border-white/20 object-cover shadow-lg"
+          />
+        )}
+
         {/* Floating rating chip */}
         <div className="absolute bottom-4 right-4 flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-surface-foreground shadow-lg">
           <Star size={12} className="fill-amber-400 text-amber-400" />
