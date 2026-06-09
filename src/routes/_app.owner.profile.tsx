@@ -64,6 +64,11 @@ function OwnerProfilePage() {
           </div>
         )}
 
+        {mySnackbar && (
+          <AppearancePanel snackbar={mySnackbar} onSave={updateMySnackbar} />
+        )}
+
+
         {/* Edição de perfil */}
         <OwnerProfileForm
           initial={{ name: user.name, phone: user.phone, address: user.address }}
