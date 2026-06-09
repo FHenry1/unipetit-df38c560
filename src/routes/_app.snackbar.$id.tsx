@@ -454,7 +454,7 @@ function ReviewCard({ review }: { review: Review }) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-white">{review.user_name}</p>
-          <p className="text-[10px] text-white/70">{when}</p>
+          <p className="text-[10px] text-white">{when}</p>
         </div>
         <StarRow rating={review.rating} size={12} />
       </div>
