@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, Copy, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { OwnerHeader } from "@/components/OwnerHeader";
 import { useAuth, type MenuItem } from "@/lib/auth";
@@ -8,8 +8,8 @@ export const Route = createFileRoute("/_app/owner/menu")({
   component: OwnerMenu,
 });
 
-type ItemDraft = { name: string; description: string; price: string; category: string };
-const emptyDraft: ItemDraft = { name: "", description: "", price: "", category: "" };
+type ItemDraft = { name: string; description: string; price: string; category: string; image_url: string };
+const emptyDraft: ItemDraft = { name: "", description: "", price: "", category: "", image_url: "" };
 
 function OwnerMenu() {
   const {
