@@ -217,9 +217,9 @@ function MenuList({
           style={{ animation: `fade-in 0.3s ease-out ${i * 0.04}s both` }}
         >
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{m.name}</p>
+            <p className="truncate text-sm font-semibold text-white">{m.name}</p>
             {m.description && (
-              <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+              <p className="mt-0.5 line-clamp-2 text-xs text-white/80">
                 {m.description}
               </p>
             )}
@@ -484,10 +484,10 @@ function OwnerReplyBlock({ reply, at }: { reply: string; at: string | null }) {
     : "";
   return (
     <div className="mt-3 rounded-lg border-l-2 border-brand bg-brand-soft/60 p-3">
-      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-brand">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-white">
         <MessageCircle size={10} /> Resposta do dono
         {when && (
-          <span className="ml-auto font-normal text-muted-foreground">{when}</span>
+          <span className="ml-auto font-normal text-white/70">{when}</span>
         )}
       </p>
       <p className="mt-1 text-sm text-white">{reply}</p>
