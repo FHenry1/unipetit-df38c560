@@ -107,11 +107,15 @@ interface AuthContextValue {
   exitOwnerMode: () => Promise<void>;
   toggleFavorite: (snackbarId: string) => Promise<void>;
   updateMySnackbar: (patch: Partial<SnackBar>) => Promise<void>;
-  addMenuItem: (item: Pick<MenuItem, "name" | "description" | "price"> & { category?: string | null }) => Promise<void>;
+  addMenuItem: (item: Pick<MenuItem, "name" | "description" | "price"> & { category?: string | null; image_url?: string | null }) => Promise<void>;
   removeMenuItem: (itemId: string) => Promise<void>;
   updateMenuItem: (itemId: string, patch: Partial<Omit<MenuItem, "id">>) => Promise<void>;
   toggleMenuItemActive: (itemId: string) => Promise<void>;
   reorderMenuItems: (orderedIds: string[]) => Promise<void>;
+  duplicateMenuItem: (itemId: string) => Promise<void>;
+  addCategory: (name: string) => Promise<void>;
+  renameCategory: (id: string, newName: string) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
 
   upsertReview: (
     snackbarId: string,
