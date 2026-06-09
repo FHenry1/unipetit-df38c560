@@ -1,5 +1,13 @@
 import { MapPin, Star, X } from "lucide-react";
+import { useEffect } from "react";
 import type { SnackBar } from "@/lib/auth";
+
+const FALLBACK_COVER =
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&q=80";
+
+function handleImgError(e: React.SyntheticEvent<HTMLImageElement>) {
+  e.currentTarget.style.display = "none";
+}
 
 export function MenuPreview({
   snackbar,
@@ -10,6 +18,18 @@ export function MenuPreview({
   open: boolean;
   onClose: () => void;
 }) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
   const accent = snackbar.accent_color || "#e85d75";
   const banner = snackbar.banner_url || snackbar.cover;
