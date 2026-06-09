@@ -47,6 +47,7 @@ export type Database = {
           description: string
           id: string
           image: string | null
+          image_url: string | null
           is_active: boolean
           name: string
           position: number
@@ -59,6 +60,7 @@ export type Database = {
           description?: string
           id?: string
           image?: string | null
+          image_url?: string | null
           is_active?: boolean
           name: string
           position?: number
@@ -71,6 +73,7 @@ export type Database = {
           description?: string
           id?: string
           image?: string | null
+          image_url?: string | null
           is_active?: boolean
           name?: string
           position?: number
@@ -286,8 +289,42 @@ export type Database = {
           },
         ]
       }
+      snackbar_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          snackbar_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          snackbar_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          snackbar_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snackbar_categories_snackbar_id_fkey"
+            columns: ["snackbar_id"]
+            isOneToOne: false
+            referencedRelation: "snackbars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       snackbars: {
         Row: {
+          accent_color: string | null
+          banner_url: string | null
           categories: string[]
           closing_time: string | null
           cover: string | null
@@ -297,6 +334,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           location: string
+          logo_url: string | null
           name: string
           opening_time: string | null
           owner_id: string
@@ -305,6 +343,8 @@ export type Database = {
           view_count: number
         }
         Insert: {
+          accent_color?: string | null
+          banner_url?: string | null
           categories?: string[]
           closing_time?: string | null
           cover?: string | null
@@ -314,6 +354,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           location?: string
+          logo_url?: string | null
           name?: string
           opening_time?: string | null
           owner_id: string
@@ -322,6 +363,8 @@ export type Database = {
           view_count?: number
         }
         Update: {
+          accent_color?: string | null
+          banner_url?: string | null
           categories?: string[]
           closing_time?: string | null
           cover?: string | null
@@ -331,6 +374,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           location?: string
+          logo_url?: string | null
           name?: string
           opening_time?: string | null
           owner_id?: string
