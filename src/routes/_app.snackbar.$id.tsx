@@ -217,9 +217,9 @@ function MenuList({
           style={{ animation: `fade-in 0.3s ease-out ${i * 0.04}s both` }}
         >
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">{m.name}</p>
+            <p className="truncate text-sm font-semibold">{m.name}</p>
             {m.description && (
-              <p className="mt-0.5 line-clamp-2 text-xs text-white/80">
+              <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                 {m.description}
               </p>
             )}
