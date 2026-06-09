@@ -197,7 +197,7 @@ function OwnerReviews() {
                 </header>
 
                 {r.comment && (
-                  <p className="mt-3 text-sm text-neutral-300 leading-relaxed">
+                  <p className="mt-3 text-sm text-white leading-relaxed">
                     {r.comment}
                   </p>
                 )}
