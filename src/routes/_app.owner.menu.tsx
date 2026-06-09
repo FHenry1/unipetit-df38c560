@@ -149,7 +149,19 @@ function OwnerMenu() {
 
   return (
     <div className="pb-6">
-      <OwnerHeader title="Gerenciar Cardápio" subtitle="Modo dono" />
+      <OwnerHeader
+        title="Gerenciar Cardápio"
+        subtitle="Modo dono"
+        right={
+          <button
+            onClick={() => navigate({ to: "/owner" })}
+            className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 h-10 text-xs font-semibold text-white hover:bg-white/20"
+            aria-label="Voltar"
+          >
+            <ArrowLeft size={14} /> Voltar
+          </button>
+        }
+      />
 
       <div className="px-5 -mt-6 space-y-4">
         <section className="rounded-2xl bg-neutral-900 border border-neutral-800 p-4">
