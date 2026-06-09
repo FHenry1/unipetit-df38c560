@@ -292,6 +292,12 @@ function OwnerMenu() {
                 >
                   <GripVertical size={14} />
                 </span>
+                {m.image_url && (
+                  <div
+                    className="h-10 w-10 shrink-0 rounded-lg bg-cover bg-center border border-neutral-800"
+                    style={{ backgroundImage: `url(${m.image_url})` }}
+                  />
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="truncate text-sm font-semibold text-white">{m.name}</p>
