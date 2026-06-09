@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_app/owner/profile")({
 });
 
 function OwnerProfilePage() {
-  const { user, logout, exitOwnerMode, mySnackbar, updateProfile, updatePassword } = useAuth();
+  const { user, logout, exitOwnerMode, mySnackbar, updateProfile, updatePassword, updateMySnackbar } = useAuth();
   const navigate = useNavigate();
   const [exiting, setExiting] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
