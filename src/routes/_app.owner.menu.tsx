@@ -460,6 +460,21 @@ function OwnerMenu() {
           </div>
         </Modal>
       )}
+
+      {/* Floating preview toggle */}
+      <button
+        onClick={() => setPreviewOpen(true)}
+        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-[#5d0a1a] px-4 py-3 text-sm font-bold text-white shadow-2xl ring-2 ring-white/10 transition hover:bg-[#6e0e22] active:scale-95"
+        aria-label="Pré-visualizar cardápio"
+      >
+        <Eye size={16} /> Visualizar
+      </button>
+
+      <MenuPreview
+        snackbar={mySnackbar}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+      />
     </div>
   );
 }
