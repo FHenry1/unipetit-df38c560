@@ -66,9 +66,8 @@ function OwnerDashboard() {
 
       <div className="-mt-6 space-y-5 px-5">
         {/* Tabs */}
-        <nav className="grid grid-cols-3 gap-1.5 rounded-2xl bg-neutral-900 p-1.5 border border-neutral-800">
+        <nav className="grid grid-cols-2 gap-1.5 rounded-2xl bg-neutral-900 p-1.5 border border-neutral-800">
           <TabLink to="/owner" active={pathname === "/owner"} icon={<LayoutDashboard size={14} />} label="Resumo" />
-          <TabLink to="/owner/menu" active={pathname.startsWith("/owner/menu")} icon={<UtensilsCrossed size={14} />} label="Cardápio" />
           <TabLink to="/owner/reviews" active={pathname.startsWith("/owner/reviews")} icon={<MessageSquare size={14} />} label="Reviews" badge={newReviews} />
         </nav>
 
