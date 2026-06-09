@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Check, ChevronDown, Copy, Eye, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { OwnerHeader } from "@/components/OwnerHeader";
 import { MenuPreview } from "@/components/MenuPreview";
 import { useAuth, type MenuItem } from "@/lib/auth";
@@ -101,19 +102,35 @@ function OwnerMenu() {
   };
 
   const submitItem = async () => {
-    if (!itemDraft.name.trim()) return;
+    const name = itemDraft.name.trim();
+    if (!name) {
+      toast.error("Informe o nome do item");
+      return;
+    }
+    const price = parseFloat(itemDraft.price.replace(",", "."));
+    if (!Number.isFinite(price) || price < 0) {
+      toast.error("Preço inválido");
+      return;
+    }
     const payload = {
-      name: itemDraft.name.trim(),
+      name,
       description: itemDraft.description.trim(),
-      price: parseFloat(itemDraft.price.replace(",", ".")) || 0,
+      price,
       category: itemDraft.category.trim() || null,
       image_url: itemDraft.image_url.trim() || null,
     };
     setSaving(true);
     try {
-      if (modalMode === "add") await addMenuItem(payload);
-      else if (modalMode === "edit" && modalItemId) await updateMenuItem(modalItemId, payload);
+      if (modalMode === "add") {
+        await addMenuItem(payload);
+        toast.success("Item adicionado");
+      } else if (modalMode === "edit" && modalItemId) {
+        await updateMenuItem(modalItemId, payload);
+        toast.success("Item atualizado");
+      }
       closeModal();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar item");
     } finally {
       setSaving(false);
     }
@@ -124,7 +141,10 @@ function OwnerMenu() {
     setSaving(true);
     try {
       await removeMenuItem(deleteTarget.id);
+      toast.success("Item removido");
       setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao remover");
     } finally {
       setSaving(false);
     }
