@@ -220,7 +220,7 @@ function ProfilePage() {
                           <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-brand">
                             <MessageSquare size={10} /> Resposta do dono
                           </p>
-                          <p className="mt-0.5 text-xs leading-relaxed">{r.owner_reply}</p>
+                          <p className="mt-0.5 text-xs leading-relaxed text-white">{r.owner_reply}</p>
                         </div>
                       )}
                     </li>

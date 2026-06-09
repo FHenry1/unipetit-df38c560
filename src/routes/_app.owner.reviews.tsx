@@ -207,7 +207,7 @@ function OwnerReviews() {
                     <p className="text-[10px] uppercase tracking-wider text-[#e85d75] font-semibold">
                       Sua resposta
                     </p>
-                    <p className="mt-1 text-sm text-neutral-200">{r.owner_reply}</p>
+                    <p className="mt-1 text-sm text-white">{r.owner_reply}</p>
                   </div>
                 )}
 

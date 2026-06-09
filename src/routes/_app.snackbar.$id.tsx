@@ -490,7 +490,7 @@ function OwnerReplyBlock({ reply, at }: { reply: string; at: string | null }) {
           <span className="ml-auto font-normal text-muted-foreground">{when}</span>
         )}
       </p>
-      <p className="mt-1 text-sm text-surface-foreground">{reply}</p>
+      <p className="mt-1 text-sm text-white">{reply}</p>
     </div>
   );
 }
