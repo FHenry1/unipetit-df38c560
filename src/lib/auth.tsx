@@ -589,22 +589,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!mySnackbar) return;
     const current = mySnackbar.menu_items.find((m) => m.id === itemId);
     if (!current) return;
-    await supabase
+    const nextActive = !current.is_active;
+    patchMySnackbar((s) => ({
+      ...s,
+      menu_items: s.menu_items.map((m) =>
+        m.id === itemId ? { ...m, is_active: nextActive } : m,
+      ),
+    }));
+    const { error } = await supabase
       .from("menu_items")
-      .update({ is_active: !current.is_active })
+      .update({ is_active: nextActive })
       .eq("id", itemId);
-    await loadSnackbars();
+    if (error) await loadSnackbars();
   };
 
   const reorderMenuItems: AuthContextValue["reorderMenuItems"] = async (orderedIds) => {
     if (!mySnackbar) return;
-    await Promise.all(
+    patchMySnackbar((s) => {
+      const map = new Map(s.menu_items.map((m) => [m.id, m]));
+      const reordered = orderedIds
+        .map((id, index) => {
+          const m = map.get(id);
+          return m ? { ...m, position: index } : null;
+        })
+        .filter((m): m is MenuItem => m !== null);
+      return { ...s, menu_items: reordered };
+    });
+    const results = await Promise.all(
       orderedIds.map((id, index) =>
         supabase.from("menu_items").update({ position: index }).eq("id", id),
       ),
     );
-    await loadSnackbars();
+    if (results.some((r) => r.error)) await loadSnackbars();
   };
+
 
 
   const replyToReview: AuthContextValue["replyToReview"] = async (reviewId, reply) => {
