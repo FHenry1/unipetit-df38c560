@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, ChevronDown, Copy, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Check, ChevronDown, Copy, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { OwnerHeader } from "@/components/OwnerHeader";
 import { useAuth, type MenuItem } from "@/lib/auth";
@@ -12,6 +12,7 @@ type ItemDraft = { name: string; description: string; price: string; category: s
 const emptyDraft: ItemDraft = { name: "", description: "", price: "", category: "", image_url: "" };
 
 function OwnerMenu() {
+  const navigate = useNavigate();
   const {
     mySnackbar,
     updateMySnackbar,
@@ -62,7 +63,13 @@ function OwnerMenu() {
   if (!mySnackbar) {
     return (
       <div className="px-5 pt-10 text-sm text-neutral-400">
-        Crie sua lanchonete primeiro.
+        Esta área é exclusiva para donos de lanchonete.{" "}
+        <button
+          onClick={() => navigate({ to: "/owner" })}
+          className="text-[#e85d75] underline"
+        >
+          Voltar
+        </button>
       </div>
     );
   }
@@ -142,7 +149,19 @@ function OwnerMenu() {
 
   return (
     <div className="pb-6">
-      <OwnerHeader title="Gerenciar Cardápio" subtitle="Modo dono" />
+      <OwnerHeader
+        title="Gerenciar Cardápio"
+        subtitle="Modo dono"
+        right={
+          <button
+            onClick={() => navigate({ to: "/owner" })}
+            className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 h-10 text-xs font-semibold text-white hover:bg-white/20"
+            aria-label="Voltar"
+          >
+            <ArrowLeft size={14} /> Voltar
+          </button>
+        }
+      />
 
       <div className="px-5 -mt-6 space-y-4">
         <section className="rounded-2xl bg-neutral-900 border border-neutral-800 p-4">
