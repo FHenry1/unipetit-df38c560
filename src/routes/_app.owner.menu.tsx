@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Check, ChevronDown, Copy, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Copy, Eye, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { OwnerHeader } from "@/components/OwnerHeader";
+import { MenuPreview } from "@/components/MenuPreview";
 import { useAuth, type MenuItem } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/owner/menu")({
@@ -37,6 +38,7 @@ function OwnerMenu() {
   const [activeCategory, setActiveCategory] = useState<string>("__all");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const categories = useMemo(() => {
     if (!mySnackbar) return [] as string[];
@@ -458,6 +460,21 @@ function OwnerMenu() {
           </div>
         </Modal>
       )}
+
+      {/* Floating preview toggle */}
+      <button
+        onClick={() => setPreviewOpen(true)}
+        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-[#5d0a1a] px-4 py-3 text-sm font-bold text-white shadow-2xl ring-2 ring-white/10 transition hover:bg-[#6e0e22] active:scale-95"
+        aria-label="Pré-visualizar cardápio"
+      >
+        <Eye size={16} /> Visualizar
+      </button>
+
+      <MenuPreview
+        snackbar={mySnackbar}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+      />
     </div>
   );
 }
