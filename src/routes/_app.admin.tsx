@@ -160,7 +160,16 @@ function AdminPage() {
     if (error) toast.error(error.message);
     else {
       toast.success("Usuário promovido a vendedor");
-      await Promise.all([loadUsers(), refresh()]);
+      await Promise.all([loadUsers(), refresh(), loadApplications()]);
+    }
+  };
+
+  const rejectApplication = async (userId: string) => {
+    const { error } = await supabase.rpc("admin_reject_owner", { target_user_id: userId });
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Solicitação rejeitada");
+      await loadApplications();
     }
   };
 
@@ -194,6 +203,18 @@ function AdminPage() {
             </div>
           </div>
           <button
+            onClick={() => setTab("applications")}
+            className="relative grid h-10 w-10 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+            aria-label="Solicitações pendentes"
+          >
+            <Bell size={16} />
+            {pendingApps.length > 0 && (
+              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-[#5d0a1a]">
+                {pendingApps.length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={async () => {
               await logout();
               navigate({ to: "/" });
@@ -208,12 +229,29 @@ function AdminPage() {
 
       <div className="-mt-6 px-5 space-y-5">
         {/* Tabs */}
-        <nav className="grid grid-cols-4 gap-1.5 rounded-2xl bg-neutral-900 p-1.5 border border-neutral-800">
+        <nav className="grid grid-cols-5 gap-1.5 rounded-2xl bg-neutral-900 p-1.5 border border-neutral-800">
           <AdminTab active={tab === "users"} onClick={() => setTab("users")} icon={<Users size={14} />} label="Usuários" />
-          <AdminTab active={tab === "reviews"} onClick={() => setTab("reviews")} icon={<MessageSquare size={14} />} label="Avaliações" />
-          <AdminTab active={tab === "snackbars"} onClick={() => setTab("snackbars")} icon={<Store size={14} />} label="Lanchonetes" />
-          <AdminTab active={tab === "reports"} onClick={() => setTab("reports")} icon={<BarChart3 size={14} />} label="Relatórios" />
+          <AdminTab
+            active={tab === "applications"}
+            onClick={() => setTab("applications")}
+            icon={<Inbox size={14} />}
+            label="Pedidos"
+            badge={pendingApps.length || undefined}
+          />
+          <AdminTab active={tab === "reviews"} onClick={() => setTab("reviews")} icon={<MessageSquare size={14} />} label="Reviews" />
+          <AdminTab active={tab === "snackbars"} onClick={() => setTab("snackbars")} icon={<Store size={14} />} label="Lojas" />
+          <AdminTab active={tab === "reports"} onClick={() => setTab("reports")} icon={<BarChart3 size={14} />} label="Relatos" />
         </nav>
+
+        {tab === "applications" && (
+          <ApplicationsTab
+            applications={applications}
+            loading={loadingApps}
+            onApprove={promoteOwner}
+            onReject={rejectApplication}
+            onRefresh={loadApplications}
+          />
+        )}
 
         {tab === "users" && (
           <UsersTab
