@@ -231,6 +231,14 @@ function OwnerMenu() {
             )}
           </label>
 
+          <CategoriesManager
+            items={mySnackbar.snackbar_categories}
+            onAdd={addCategory}
+            onRename={renameCategory}
+            onDelete={deleteCategory}
+          />
+
+
           {categories.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               <CategoryChip active={activeCategory === "__all"} label="Todos" onClick={() => setActiveCategory("__all")} />
