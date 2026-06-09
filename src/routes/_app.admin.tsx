@@ -2,6 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
+  Bell,
+  Check,
+  Inbox,
   LogOut,
   MessageSquare,
   Plus,
@@ -22,7 +25,19 @@ export const Route = createFileRoute("/_app/admin")({
   component: AdminPage,
 });
 
-type Tab = "users" | "reviews" | "snackbars" | "reports";
+type Tab = "users" | "applications" | "reviews" | "snackbars" | "reports";
+
+interface OwnerApplication {
+  id: string;
+  user_id: string;
+  business_name: string;
+  document_url: string | null;
+  notes: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  user_name?: string;
+}
 
 interface AdminUser {
   id: string;
@@ -37,12 +52,78 @@ function AdminPage() {
   const [tab, setTab] = useState<Tab>("users");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [applications, setApplications] = useState<OwnerApplication[]>([]);
+  const [loadingApps, setLoadingApps] = useState(false);
 
   useEffect(() => {
     if (user && user.role !== "admin") {
       navigate({ to: user.role === "owner" ? "/owner" : "/home" });
     }
   }, [user, navigate]);
+
+  const pendingApps = useMemo(
+    () => applications.filter((a) => a.status === "pending"),
+    [applications],
+  );
+
+  const loadApplications = async () => {
+    setLoadingApps(true);
+    try {
+      const { data: apps, error } = await supabase
+        .from("owner_applications")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const list = (apps ?? []) as OwnerApplication[];
+      const userIds = Array.from(new Set(list.map((a) => a.user_id)));
+      if (userIds.length) {
+        const { data: profs } = await supabase.rpc("get_public_profiles", { _ids: userIds });
+        const nameById = new Map<string, string>(
+          (profs ?? []).map((p: any) => [p.id, p.name ?? "Usuário"]),
+        );
+        list.forEach((a) => {
+          a.user_name = nameById.get(a.user_id) ?? "Usuário";
+        });
+      }
+      setApplications(list);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao carregar solicitações");
+    } finally {
+      setLoadingApps(false);
+    }
+  };
+
+  // Realtime: notify admin when an owner application is created/updated
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    void loadApplications();
+    const channel = supabase
+      .channel("owner-applications-admin")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "owner_applications" },
+        (payload: any) => {
+          void loadApplications();
+          if (payload.eventType === "INSERT" && payload.new?.status === "pending") {
+            toast.info("Nova solicitação para se tornar dono!", {
+              action: { label: "Ver", onClick: () => setTab("applications") },
+            });
+          } else if (
+            payload.eventType === "UPDATE" &&
+            payload.old?.status !== "pending" &&
+            payload.new?.status === "pending"
+          ) {
+            toast.info("Solicitação de dono reenviada", {
+              action: { label: "Ver", onClick: () => setTab("applications") },
+            });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const loadUsers = async () => {
     setLoadingUsers(true);
@@ -79,7 +160,16 @@ function AdminPage() {
     if (error) toast.error(error.message);
     else {
       toast.success("Usuário promovido a vendedor");
-      await Promise.all([loadUsers(), refresh()]);
+      await Promise.all([loadUsers(), refresh(), loadApplications()]);
+    }
+  };
+
+  const rejectApplication = async (userId: string) => {
+    const { error } = await supabase.rpc("admin_reject_owner", { target_user_id: userId });
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Solicitação rejeitada");
+      await loadApplications();
     }
   };
 
@@ -113,6 +203,18 @@ function AdminPage() {
             </div>
           </div>
           <button
+            onClick={() => setTab("applications")}
+            className="relative grid h-10 w-10 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+            aria-label="Solicitações pendentes"
+          >
+            <Bell size={16} />
+            {pendingApps.length > 0 && (
+              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-[#5d0a1a]">
+                {pendingApps.length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={async () => {
               await logout();
               navigate({ to: "/" });
@@ -127,12 +229,29 @@ function AdminPage() {
 
       <div className="-mt-6 px-5 space-y-5">
         {/* Tabs */}
-        <nav className="grid grid-cols-4 gap-1.5 rounded-2xl bg-neutral-900 p-1.5 border border-neutral-800">
+        <nav className="grid grid-cols-5 gap-1.5 rounded-2xl bg-neutral-900 p-1.5 border border-neutral-800">
           <AdminTab active={tab === "users"} onClick={() => setTab("users")} icon={<Users size={14} />} label="Usuários" />
-          <AdminTab active={tab === "reviews"} onClick={() => setTab("reviews")} icon={<MessageSquare size={14} />} label="Avaliações" />
-          <AdminTab active={tab === "snackbars"} onClick={() => setTab("snackbars")} icon={<Store size={14} />} label="Lanchonetes" />
-          <AdminTab active={tab === "reports"} onClick={() => setTab("reports")} icon={<BarChart3 size={14} />} label="Relatórios" />
+          <AdminTab
+            active={tab === "applications"}
+            onClick={() => setTab("applications")}
+            icon={<Inbox size={14} />}
+            label="Pedidos"
+            badge={pendingApps.length || undefined}
+          />
+          <AdminTab active={tab === "reviews"} onClick={() => setTab("reviews")} icon={<MessageSquare size={14} />} label="Reviews" />
+          <AdminTab active={tab === "snackbars"} onClick={() => setTab("snackbars")} icon={<Store size={14} />} label="Lojas" />
+          <AdminTab active={tab === "reports"} onClick={() => setTab("reports")} icon={<BarChart3 size={14} />} label="Relatos" />
         </nav>
+
+        {tab === "applications" && (
+          <ApplicationsTab
+            applications={applications}
+            loading={loadingApps}
+            onApprove={promoteOwner}
+            onReject={rejectApplication}
+            onRefresh={loadApplications}
+          />
+        )}
 
         {tab === "users" && (
           <UsersTab
@@ -165,22 +284,170 @@ function AdminTab({
   onClick,
   icon,
   label,
+  badge,
 }: {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
+  badge?: number;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-[11px] font-semibold transition ${
+      className={`relative flex flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-[11px] font-semibold transition ${
         active ? "bg-[#5d0a1a] text-white shadow" : "text-neutral-400 hover:text-white"
       }`}
     >
       {icon}
       <span>{label}</span>
+      {badge ? (
+        <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+          {badge}
+        </span>
+      ) : null}
     </button>
+  );
+}
+
+function ApplicationsTab({
+  applications,
+  loading,
+  onApprove,
+  onReject,
+  onRefresh,
+}: {
+  applications: OwnerApplication[];
+  loading: boolean;
+  onApprove: (userId: string) => Promise<void>;
+  onReject: (userId: string) => Promise<void>;
+  onRefresh: () => Promise<void>;
+}) {
+  const pending = applications.filter((a) => a.status === "pending");
+  const others = applications.filter((a) => a.status !== "pending");
+  const statusStyle: Record<string, string> = {
+    pending: "bg-amber-500/20 text-amber-400",
+    approved: "bg-emerald-500/20 text-emerald-400",
+    rejected: "bg-rose-500/20 text-rose-400",
+  };
+
+  return (
+    <section className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">
+          Solicitações para tornar-se dono{" "}
+          <span className="text-neutral-500">({applications.length})</span>
+        </h2>
+        <button
+          onClick={onRefresh}
+          className="rounded-lg bg-neutral-800 px-2.5 py-1 text-[11px] font-semibold text-neutral-300 hover:bg-neutral-700"
+        >
+          Atualizar
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="py-6 text-center text-xs text-neutral-500">Carregando…</p>
+      ) : applications.length === 0 ? (
+        <p className="mt-4 rounded-xl border border-dashed border-neutral-700 p-6 text-center text-xs text-neutral-500">
+          Nenhuma solicitação ainda. Você receberá uma notificação quando alguém pedir.
+        </p>
+      ) : (
+        <>
+          {pending.length > 0 && (
+            <div className="mt-3">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                Pendentes ({pending.length})
+              </p>
+              <ul className="space-y-2">
+                {pending.map((a) => (
+                  <li
+                    key={a.id}
+                    className="rounded-xl border border-amber-500/30 bg-neutral-950 p-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-white">
+                          {a.business_name || "(sem nome)"}
+                        </p>
+                        <p className="truncate text-[11px] text-neutral-400">
+                          por {a.user_name ?? "Usuário"}
+                        </p>
+                        {a.notes && (
+                          <p className="mt-1 line-clamp-2 text-xs text-neutral-400">"{a.notes}"</p>
+                        )}
+                        {a.document_url && (
+                          <a
+                            href={a.document_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1 inline-block text-[11px] font-semibold text-[#e85d75] hover:underline"
+                          >
+                            Ver documento →
+                          </a>
+                        )}
+                        <p className="mt-1 text-[10px] text-neutral-600">
+                          {new Date(a.created_at).toLocaleString("pt-BR")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => onApprove(a.user_id)}
+                        className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-500/15 px-2.5 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/25"
+                      >
+                        <Check size={12} /> Aprovar
+                      </button>
+                      <button
+                        onClick={() => onReject(a.user_id)}
+                        className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-rose-500/15 px-2.5 py-2 text-xs font-semibold text-rose-400 hover:bg-rose-500/25"
+                      >
+                        <X size={12} /> Rejeitar
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {others.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                Histórico
+              </p>
+              <ul className="space-y-2">
+                {others.map((a) => (
+                  <li
+                    key={a.id}
+                    className="rounded-xl border border-neutral-800 bg-neutral-950 p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-white">
+                          {a.business_name || "(sem nome)"}
+                        </p>
+                        <p className="truncate text-[11px] text-neutral-500">
+                          {a.user_name ?? "Usuário"} ·{" "}
+                          {new Date(a.updated_at).toLocaleDateString("pt-BR")}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                          statusStyle[a.status] ?? "bg-neutral-800 text-neutral-400"
+                        }`}
+                      >
+                        {a.status}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 
