@@ -369,11 +369,32 @@ function OwnerMenu() {
               value={itemDraft.price}
               onChange={(v) => setItemDraft({ ...itemDraft, price: v })}
             />
+            <label className="block">
+              <span className="text-[11px] font-medium text-neutral-400">Categoria</span>
+              <select
+                value={itemDraft.category}
+                onChange={(e) => setItemDraft({ ...itemDraft, category: e.target.value })}
+                className="mt-1 w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white focus:border-[#e85d75] focus:outline-none"
+              >
+                <option value="">Sem categoria</option>
+                {[...(mySnackbar?.snackbar_categories ?? [])]
+                  .sort((a, b) => a.position - b.position)
+                  .map((c) => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
+              </select>
+            </label>
             <Input
-              label="Categoria (ex: Hambúrgueres, Bebidas)"
-              value={itemDraft.category}
-              onChange={(v) => setItemDraft({ ...itemDraft, category: v })}
+              label="URL da imagem (opcional)"
+              value={itemDraft.image_url}
+              onChange={(v) => setItemDraft({ ...itemDraft, image_url: v })}
             />
+            {itemDraft.image_url && (
+              <div
+                className="h-28 w-full rounded-xl bg-cover bg-center border border-neutral-700"
+                style={{ backgroundImage: `url(${itemDraft.image_url})` }}
+              />
+            )}
             <div className="flex gap-2 pt-1">
               <button
                 onClick={closeModal}
