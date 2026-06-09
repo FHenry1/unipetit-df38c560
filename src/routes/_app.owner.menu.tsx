@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Check, ChevronDown, Copy, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Copy, Eye, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { OwnerHeader } from "@/components/OwnerHeader";
+import { MenuPreview } from "@/components/MenuPreview";
 import { useAuth, type MenuItem } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/owner/menu")({
@@ -37,6 +38,7 @@ function OwnerMenu() {
   const [activeCategory, setActiveCategory] = useState<string>("__all");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const categories = useMemo(() => {
     if (!mySnackbar) return [] as string[];
