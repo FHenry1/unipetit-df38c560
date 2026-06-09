@@ -73,7 +73,7 @@ function SnackBarDetail() {
       {/* Hero */}
       <div
         className="relative h-64 w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${s.cover})` }}
+        style={{ backgroundImage: `url(${s.banner_url ?? s.cover})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
         <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-4">
@@ -108,6 +108,14 @@ function SnackBarDetail() {
             </button>
           </div>
         </div>
+
+        {s.logo_url && (
+          <img
+            src={s.logo_url}
+            alt={`Logo ${s.name}`}
+            className="absolute bottom-3 left-4 h-14 w-14 rounded-xl border-2 border-white/20 object-cover shadow-lg"
+          />
+        )}
 
         {/* Floating rating chip */}
         <div className="absolute bottom-4 right-4 flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-surface-foreground shadow-lg">
@@ -166,7 +174,7 @@ function SnackBarDetail() {
         </div>
 
         <div className="mt-5 animate-fade-in" key={tab}>
-          {tab === "menu" && <MenuList items={activeMenu} />}
+          {tab === "menu" && <MenuList items={activeMenu} accentColor={s.accent_color} />}
           {tab === "reviews" && (
             <ReviewsTab
               snackbarId={s.id}
@@ -186,7 +194,13 @@ function SnackBarDetail() {
 
 /* ---------------- MENU ---------------- */
 
-function MenuList({ items }: { items: ReturnType<typeof useAuth>["snackbars"][number]["menu_items"] }) {
+function MenuList({
+  items,
+  accentColor,
+}: {
+  items: ReturnType<typeof useAuth>["snackbars"][number]["menu_items"];
+  accentColor: string;
+}) {
   if (items.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
@@ -199,7 +213,7 @@ function MenuList({ items }: { items: ReturnType<typeof useAuth>["snackbars"][nu
       {items.map((m, i) => (
         <li
           key={m.id}
-          className="group flex items-start justify-between gap-3 rounded-xl border border-border bg-background p-3.5 transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
+          className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3.5 transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
           style={{ animation: `fade-in 0.3s ease-out ${i * 0.04}s both` }}
         >
           <div className="min-w-0 flex-1">
@@ -209,10 +223,20 @@ function MenuList({ items }: { items: ReturnType<typeof useAuth>["snackbars"][nu
                 {m.description}
               </p>
             )}
+            <span
+              className="mt-2 inline-block rounded-full px-3 py-1 text-sm font-extrabold text-white"
+              style={{ backgroundColor: accentColor }}
+            >
+              R$ {m.price.toFixed(2).replace(".", ",")}
+            </span>
           </div>
-          <span className="shrink-0 rounded-full bg-brand-soft px-3 py-1.5 text-sm font-extrabold text-brand">
-            R$ {m.price.toFixed(2).replace(".", ",")}
-          </span>
+          {m.image_url && (
+            <img
+              src={m.image_url}
+              alt={m.name}
+              className="h-20 w-20 shrink-0 rounded-xl object-cover"
+            />
+          )}
         </li>
       ))}
     </ul>

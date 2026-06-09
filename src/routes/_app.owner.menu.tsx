@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, Copy, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { OwnerHeader } from "@/components/OwnerHeader";
 import { useAuth, type MenuItem } from "@/lib/auth";
@@ -8,8 +8,8 @@ export const Route = createFileRoute("/_app/owner/menu")({
   component: OwnerMenu,
 });
 
-type ItemDraft = { name: string; description: string; price: string; category: string };
-const emptyDraft: ItemDraft = { name: "", description: "", price: "", category: "" };
+type ItemDraft = { name: string; description: string; price: string; category: string; image_url: string };
+const emptyDraft: ItemDraft = { name: "", description: "", price: "", category: "", image_url: "" };
 
 function OwnerMenu() {
   const {
@@ -20,6 +20,10 @@ function OwnerMenu() {
     updateMenuItem,
     toggleMenuItemActive,
     reorderMenuItems,
+    duplicateMenuItem,
+    addCategory,
+    renameCategory,
+    deleteCategory,
   } = useAuth();
   const [editingInfo, setEditingInfo] = useState(false);
   const [infoDraft, setInfoDraft] = useState(mySnackbar);
@@ -35,11 +39,9 @@ function OwnerMenu() {
 
   const categories = useMemo(() => {
     if (!mySnackbar) return [] as string[];
-    const set = new Set<string>();
-    mySnackbar.menu_items.forEach((m) => {
-      if (m.category && m.category.trim()) set.add(m.category.trim());
-    });
-    return Array.from(set).sort();
+    return [...mySnackbar.snackbar_categories]
+      .sort((a, b) => a.position - b.position)
+      .map((c) => c.name);
   }, [mySnackbar]);
 
   const filtered = useMemo(() => {
@@ -77,6 +79,7 @@ function OwnerMenu() {
       description: m.description ?? "",
       price: m.price.toFixed(2).replace(".", ","),
       category: m.category ?? "",
+      image_url: m.image_url ?? "",
     });
     setModalItemId(m.id);
     setModalMode("edit");
@@ -95,6 +98,7 @@ function OwnerMenu() {
       description: itemDraft.description.trim(),
       price: parseFloat(itemDraft.price.replace(",", ".")) || 0,
       category: itemDraft.category.trim() || null,
+      image_url: itemDraft.image_url.trim() || null,
     };
     setSaving(true);
     try {
@@ -227,6 +231,14 @@ function OwnerMenu() {
             )}
           </label>
 
+          <CategoriesManager
+            items={mySnackbar.snackbar_categories}
+            onAdd={addCategory}
+            onRename={renameCategory}
+            onDelete={deleteCategory}
+          />
+
+
           {categories.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               <CategoryChip active={activeCategory === "__all"} label="Todos" onClick={() => setActiveCategory("__all")} />
@@ -280,6 +292,12 @@ function OwnerMenu() {
                 >
                   <GripVertical size={14} />
                 </span>
+                {m.image_url && (
+                  <div
+                    className="h-10 w-10 shrink-0 rounded-lg bg-cover bg-center border border-neutral-800"
+                    style={{ backgroundImage: `url(${m.image_url})` }}
+                  />
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="truncate text-sm font-semibold text-white">{m.name}</p>
@@ -307,6 +325,14 @@ function OwnerMenu() {
                     aria-label="Editar"
                   >
                     <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => duplicateMenuItem(m.id)}
+                    className="grid h-8 w-8 place-items-center rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                    aria-label="Duplicar"
+                    title="Duplicar item"
+                  >
+                    <Copy size={14} />
                   </button>
                   <button
                     onClick={() => setDeleteTarget(m)}
@@ -343,11 +369,32 @@ function OwnerMenu() {
               value={itemDraft.price}
               onChange={(v) => setItemDraft({ ...itemDraft, price: v })}
             />
+            <label className="block">
+              <span className="text-[11px] font-medium text-neutral-400">Categoria</span>
+              <select
+                value={itemDraft.category}
+                onChange={(e) => setItemDraft({ ...itemDraft, category: e.target.value })}
+                className="mt-1 w-full rounded-lg bg-neutral-950 border border-neutral-800 px-3 py-2 text-sm text-white focus:border-[#e85d75] focus:outline-none"
+              >
+                <option value="">Sem categoria</option>
+                {[...(mySnackbar?.snackbar_categories ?? [])]
+                  .sort((a, b) => a.position - b.position)
+                  .map((c) => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
+              </select>
+            </label>
             <Input
-              label="Categoria (ex: Hambúrgueres, Bebidas)"
-              value={itemDraft.category}
-              onChange={(v) => setItemDraft({ ...itemDraft, category: v })}
+              label="URL da imagem (opcional)"
+              value={itemDraft.image_url}
+              onChange={(v) => setItemDraft({ ...itemDraft, image_url: v })}
             />
+            {itemDraft.image_url && (
+              <div
+                className="h-28 w-full rounded-xl bg-cover bg-center border border-neutral-700"
+                style={{ backgroundImage: `url(${itemDraft.image_url})` }}
+              />
+            )}
             <div className="flex gap-2 pt-1">
               <button
                 onClick={closeModal}
@@ -493,5 +540,141 @@ function CategoryChip({ active, label, onClick }: { active: boolean; label: stri
     >
       {label}
     </button>
+  );
+}
+
+function CategoriesManager({
+  items,
+  onAdd,
+  onRename,
+  onDelete,
+}: {
+  items: { id: string; name: string; position: number }[];
+  onAdd: (name: string) => Promise<void>;
+  onRename: (id: string, newName: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [newName, setNewName] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const sorted = [...items].sort((a, b) => a.position - b.position);
+
+  const submitNew = async () => {
+    if (!newName.trim() || busy) return;
+    setBusy(true);
+    try {
+      await onAdd(newName);
+      setNewName("");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitRename = async (id: string) => {
+    if (!editingValue.trim() || busy) return;
+    setBusy(true);
+    try {
+      await onRename(id, editingValue);
+      setEditingId(null);
+      setEditingValue("");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <details className="group mt-3 rounded-xl border border-neutral-800 bg-neutral-950">
+      <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-xs font-semibold text-neutral-300 hover:text-white">
+        <span>Categorias ({items.length})</span>
+        <ChevronDown size={14} className="transition group-open:rotate-180" />
+      </summary>
+      <div className="space-y-2 px-4 pb-4">
+        {sorted.length === 0 && (
+          <p className="text-[11px] text-neutral-500">Nenhuma categoria ainda.</p>
+        )}
+        {sorted.map((c) => (
+          <div key={c.id} className="flex items-center gap-2">
+            {editingId === c.id ? (
+              <>
+                <input
+                  autoFocus
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") submitRename(c.id);
+                    if (e.key === "Escape") {
+                      setEditingId(null);
+                      setEditingValue("");
+                    }
+                  }}
+                  className="flex-1 rounded-lg bg-neutral-900 border border-neutral-700 px-2 py-1 text-sm text-white focus:border-[#e85d75] focus:outline-none"
+                />
+                <button
+                  onClick={() => submitRename(c.id)}
+                  className="grid h-7 w-7 place-items-center rounded-lg bg-[#5d0a1a] text-white"
+                  aria-label="Salvar"
+                >
+                  <Check size={12} />
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingId(null);
+                    setEditingValue("");
+                  }}
+                  className="grid h-7 w-7 place-items-center rounded-lg bg-neutral-800 text-neutral-300"
+                  aria-label="Cancelar"
+                >
+                  <X size={12} />
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 truncate text-sm text-white">{c.name}</span>
+                <button
+                  onClick={() => {
+                    setEditingId(c.id);
+                    setEditingValue(c.name);
+                  }}
+                  className="grid h-7 w-7 place-items-center rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                  aria-label="Renomear"
+                >
+                  <Pencil size={12} />
+                </button>
+                <button
+                  onClick={async () => {
+                    if (window.confirm(`Excluir a categoria "${c.name}"? Os itens dela ficarão sem categoria.`)) {
+                      await onDelete(c.id);
+                    }
+                  }}
+                  className="grid h-7 w-7 place-items-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                  aria-label="Excluir"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submitNew();
+            }}
+            placeholder="Nova categoria"
+            className="flex-1 rounded-lg bg-neutral-900 border border-neutral-800 px-3 py-1.5 text-sm text-white focus:border-[#e85d75] focus:outline-none"
+          />
+          <button
+            onClick={submitNew}
+            disabled={busy || !newName.trim()}
+            className="rounded-lg bg-[#5d0a1a] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            Adicionar
+          </button>
+        </div>
+      </div>
+    </details>
   );
 }
