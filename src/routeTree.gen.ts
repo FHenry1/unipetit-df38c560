@@ -15,10 +15,10 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppSearchRouteImport } from './routes/_app.search'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
-import { Route as AppOwnerRouteImport } from './routes/_app.owner'
 import { Route as AppMapRouteImport } from './routes/_app.map'
 import { Route as AppHomeRouteImport } from './routes/_app.home'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
+import { Route as AppOwnerIndexRouteImport } from './routes/_app.owner.index'
 import { Route as AppSnackbarIdRouteImport } from './routes/_app.snackbar.$id'
 import { Route as AppOwnerReviewsRouteImport } from './routes/_app.owner.reviews'
 import { Route as AppOwnerProfileRouteImport } from './routes/_app.owner.profile'
@@ -54,11 +54,6 @@ const AppProfileRoute = AppProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AppRoute,
 } as any)
-const AppOwnerRoute = AppOwnerRouteImport.update({
-  id: '/owner',
-  path: '/owner',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppMapRoute = AppMapRouteImport.update({
   id: '/map',
   path: '/map',
@@ -74,30 +69,35 @@ const AppAdminRoute = AppAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOwnerIndexRoute = AppOwnerIndexRouteImport.update({
+  id: '/owner/',
+  path: '/owner/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSnackbarIdRoute = AppSnackbarIdRouteImport.update({
   id: '/snackbar/$id',
   path: '/snackbar/$id',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOwnerReviewsRoute = AppOwnerReviewsRouteImport.update({
-  id: '/reviews',
-  path: '/reviews',
-  getParentRoute: () => AppOwnerRoute,
+  id: '/owner/reviews',
+  path: '/owner/reviews',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppOwnerProfileRoute = AppOwnerProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => AppOwnerRoute,
+  id: '/owner/profile',
+  path: '/owner/profile',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppOwnerOrdersRoute = AppOwnerOrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => AppOwnerRoute,
+  id: '/owner/orders',
+  path: '/owner/orders',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppOwnerMenuRoute = AppOwnerMenuRouteImport.update({
-  id: '/menu',
-  path: '/menu',
-  getParentRoute: () => AppOwnerRoute,
+  id: '/owner/menu',
+  path: '/owner/menu',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -107,7 +107,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AppAdminRoute
   '/home': typeof AppHomeRoute
   '/map': typeof AppMapRoute
-  '/owner': typeof AppOwnerRouteWithChildren
   '/profile': typeof AppProfileRoute
   '/search': typeof AppSearchRoute
   '/owner/menu': typeof AppOwnerMenuRoute
@@ -115,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/owner/profile': typeof AppOwnerProfileRoute
   '/owner/reviews': typeof AppOwnerReviewsRoute
   '/snackbar/$id': typeof AppSnackbarIdRoute
+  '/owner/': typeof AppOwnerIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -123,7 +123,6 @@ export interface FileRoutesByTo {
   '/admin': typeof AppAdminRoute
   '/home': typeof AppHomeRoute
   '/map': typeof AppMapRoute
-  '/owner': typeof AppOwnerRouteWithChildren
   '/profile': typeof AppProfileRoute
   '/search': typeof AppSearchRoute
   '/owner/menu': typeof AppOwnerMenuRoute
@@ -131,6 +130,7 @@ export interface FileRoutesByTo {
   '/owner/profile': typeof AppOwnerProfileRoute
   '/owner/reviews': typeof AppOwnerReviewsRoute
   '/snackbar/$id': typeof AppSnackbarIdRoute
+  '/owner': typeof AppOwnerIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -141,7 +141,6 @@ export interface FileRoutesById {
   '/_app/admin': typeof AppAdminRoute
   '/_app/home': typeof AppHomeRoute
   '/_app/map': typeof AppMapRoute
-  '/_app/owner': typeof AppOwnerRouteWithChildren
   '/_app/profile': typeof AppProfileRoute
   '/_app/search': typeof AppSearchRoute
   '/_app/owner/menu': typeof AppOwnerMenuRoute
@@ -149,6 +148,7 @@ export interface FileRoutesById {
   '/_app/owner/profile': typeof AppOwnerProfileRoute
   '/_app/owner/reviews': typeof AppOwnerReviewsRoute
   '/_app/snackbar/$id': typeof AppSnackbarIdRoute
+  '/_app/owner/': typeof AppOwnerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -159,7 +159,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/home'
     | '/map'
-    | '/owner'
     | '/profile'
     | '/search'
     | '/owner/menu'
@@ -167,6 +166,7 @@ export interface FileRouteTypes {
     | '/owner/profile'
     | '/owner/reviews'
     | '/snackbar/$id'
+    | '/owner/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -175,7 +175,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/home'
     | '/map'
-    | '/owner'
     | '/profile'
     | '/search'
     | '/owner/menu'
@@ -183,6 +182,7 @@ export interface FileRouteTypes {
     | '/owner/profile'
     | '/owner/reviews'
     | '/snackbar/$id'
+    | '/owner'
   id:
     | '__root__'
     | '/'
@@ -192,7 +192,6 @@ export interface FileRouteTypes {
     | '/_app/admin'
     | '/_app/home'
     | '/_app/map'
-    | '/_app/owner'
     | '/_app/profile'
     | '/_app/search'
     | '/_app/owner/menu'
@@ -200,6 +199,7 @@ export interface FileRouteTypes {
     | '/_app/owner/profile'
     | '/_app/owner/reviews'
     | '/_app/snackbar/$id'
+    | '/_app/owner/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -253,13 +253,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfileRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/owner': {
-      id: '/_app/owner'
-      path: '/owner'
-      fullPath: '/owner'
-      preLoaderRoute: typeof AppOwnerRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/map': {
       id: '/_app/map'
       path: '/map'
@@ -281,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/owner/': {
+      id: '/_app/owner/'
+      path: '/owner'
+      fullPath: '/owner/'
+      preLoaderRoute: typeof AppOwnerIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/snackbar/$id': {
       id: '/_app/snackbar/$id'
       path: '/snackbar/$id'
@@ -290,71 +290,61 @@ declare module '@tanstack/react-router' {
     }
     '/_app/owner/reviews': {
       id: '/_app/owner/reviews'
-      path: '/reviews'
+      path: '/owner/reviews'
       fullPath: '/owner/reviews'
       preLoaderRoute: typeof AppOwnerReviewsRouteImport
-      parentRoute: typeof AppOwnerRoute
+      parentRoute: typeof AppRoute
     }
     '/_app/owner/profile': {
       id: '/_app/owner/profile'
-      path: '/profile'
+      path: '/owner/profile'
       fullPath: '/owner/profile'
       preLoaderRoute: typeof AppOwnerProfileRouteImport
-      parentRoute: typeof AppOwnerRoute
+      parentRoute: typeof AppRoute
     }
     '/_app/owner/orders': {
       id: '/_app/owner/orders'
-      path: '/orders'
+      path: '/owner/orders'
       fullPath: '/owner/orders'
       preLoaderRoute: typeof AppOwnerOrdersRouteImport
-      parentRoute: typeof AppOwnerRoute
+      parentRoute: typeof AppRoute
     }
     '/_app/owner/menu': {
       id: '/_app/owner/menu'
-      path: '/menu'
+      path: '/owner/menu'
       fullPath: '/owner/menu'
       preLoaderRoute: typeof AppOwnerMenuRouteImport
-      parentRoute: typeof AppOwnerRoute
+      parentRoute: typeof AppRoute
     }
   }
 }
-
-interface AppOwnerRouteChildren {
-  AppOwnerMenuRoute: typeof AppOwnerMenuRoute
-  AppOwnerOrdersRoute: typeof AppOwnerOrdersRoute
-  AppOwnerProfileRoute: typeof AppOwnerProfileRoute
-  AppOwnerReviewsRoute: typeof AppOwnerReviewsRoute
-}
-
-const AppOwnerRouteChildren: AppOwnerRouteChildren = {
-  AppOwnerMenuRoute: AppOwnerMenuRoute,
-  AppOwnerOrdersRoute: AppOwnerOrdersRoute,
-  AppOwnerProfileRoute: AppOwnerProfileRoute,
-  AppOwnerReviewsRoute: AppOwnerReviewsRoute,
-}
-
-const AppOwnerRouteWithChildren = AppOwnerRoute._addFileChildren(
-  AppOwnerRouteChildren,
-)
 
 interface AppRouteChildren {
   AppAdminRoute: typeof AppAdminRoute
   AppHomeRoute: typeof AppHomeRoute
   AppMapRoute: typeof AppMapRoute
-  AppOwnerRoute: typeof AppOwnerRouteWithChildren
   AppProfileRoute: typeof AppProfileRoute
   AppSearchRoute: typeof AppSearchRoute
+  AppOwnerMenuRoute: typeof AppOwnerMenuRoute
+  AppOwnerOrdersRoute: typeof AppOwnerOrdersRoute
+  AppOwnerProfileRoute: typeof AppOwnerProfileRoute
+  AppOwnerReviewsRoute: typeof AppOwnerReviewsRoute
   AppSnackbarIdRoute: typeof AppSnackbarIdRoute
+  AppOwnerIndexRoute: typeof AppOwnerIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAdminRoute: AppAdminRoute,
   AppHomeRoute: AppHomeRoute,
   AppMapRoute: AppMapRoute,
-  AppOwnerRoute: AppOwnerRouteWithChildren,
   AppProfileRoute: AppProfileRoute,
   AppSearchRoute: AppSearchRoute,
+  AppOwnerMenuRoute: AppOwnerMenuRoute,
+  AppOwnerOrdersRoute: AppOwnerOrdersRoute,
+  AppOwnerProfileRoute: AppOwnerProfileRoute,
+  AppOwnerReviewsRoute: AppOwnerReviewsRoute,
   AppSnackbarIdRoute: AppSnackbarIdRoute,
+  AppOwnerIndexRoute: AppOwnerIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -368,3 +358,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
