@@ -7,6 +7,7 @@ import {
   LogOut,
   Mail,
   MapPin,
+  Palette,
   Phone,
   Save,
   Store,
