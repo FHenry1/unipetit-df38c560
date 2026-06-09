@@ -161,7 +161,7 @@ function ProfilePage() {
                             {s.rating.toFixed(1)}
                           </span>
                         </div>
-                        <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{s.location}</p>
+                        <p className="mt-0.5 line-clamp-1 text-xs text-white/70">{s.location}</p>
                       </div>
                       <ChevronRight size={16} className="shrink-0 text-muted-foreground" />
                     </Link>
