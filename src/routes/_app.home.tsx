@@ -312,7 +312,7 @@ function SnackCard({
     <Link
       to="/snackbar/$id"
       params={{ id: s.id }}
-      className="group relative flex overflow-hidden rounded-2xl bg-white text-neutral-900 shadow-card ring-1 ring-neutral-100 transition active:scale-[0.99] sm:flex-col"
+      className="group relative flex overflow-hidden rounded-2xl bg-neutral-900 text-white shadow-card ring-1 ring-neutral-800 transition active:scale-[0.99] sm:flex-col"
     >
       <div
         className="h-24 w-28 shrink-0 bg-cover bg-center sm:h-32 sm:w-full"
