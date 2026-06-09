@@ -284,22 +284,170 @@ function AdminTab({
   onClick,
   icon,
   label,
+  badge,
 }: {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
+  badge?: number;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-[11px] font-semibold transition ${
+      className={`relative flex flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-[11px] font-semibold transition ${
         active ? "bg-[#5d0a1a] text-white shadow" : "text-neutral-400 hover:text-white"
       }`}
     >
       {icon}
       <span>{label}</span>
+      {badge ? (
+        <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+          {badge}
+        </span>
+      ) : null}
     </button>
+  );
+}
+
+function ApplicationsTab({
+  applications,
+  loading,
+  onApprove,
+  onReject,
+  onRefresh,
+}: {
+  applications: OwnerApplication[];
+  loading: boolean;
+  onApprove: (userId: string) => Promise<void>;
+  onReject: (userId: string) => Promise<void>;
+  onRefresh: () => Promise<void>;
+}) {
+  const pending = applications.filter((a) => a.status === "pending");
+  const others = applications.filter((a) => a.status !== "pending");
+  const statusStyle: Record<string, string> = {
+    pending: "bg-amber-500/20 text-amber-400",
+    approved: "bg-emerald-500/20 text-emerald-400",
+    rejected: "bg-rose-500/20 text-rose-400",
+  };
+
+  return (
+    <section className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">
+          Solicitações para tornar-se dono{" "}
+          <span className="text-neutral-500">({applications.length})</span>
+        </h2>
+        <button
+          onClick={onRefresh}
+          className="rounded-lg bg-neutral-800 px-2.5 py-1 text-[11px] font-semibold text-neutral-300 hover:bg-neutral-700"
+        >
+          Atualizar
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="py-6 text-center text-xs text-neutral-500">Carregando…</p>
+      ) : applications.length === 0 ? (
+        <p className="mt-4 rounded-xl border border-dashed border-neutral-700 p-6 text-center text-xs text-neutral-500">
+          Nenhuma solicitação ainda. Você receberá uma notificação quando alguém pedir.
+        </p>
+      ) : (
+        <>
+          {pending.length > 0 && (
+            <div className="mt-3">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                Pendentes ({pending.length})
+              </p>
+              <ul className="space-y-2">
+                {pending.map((a) => (
+                  <li
+                    key={a.id}
+                    className="rounded-xl border border-amber-500/30 bg-neutral-950 p-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-white">
+                          {a.business_name || "(sem nome)"}
+                        </p>
+                        <p className="truncate text-[11px] text-neutral-400">
+                          por {a.user_name ?? "Usuário"}
+                        </p>
+                        {a.notes && (
+                          <p className="mt-1 line-clamp-2 text-xs text-neutral-400">"{a.notes}"</p>
+                        )}
+                        {a.document_url && (
+                          <a
+                            href={a.document_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1 inline-block text-[11px] font-semibold text-[#e85d75] hover:underline"
+                          >
+                            Ver documento →
+                          </a>
+                        )}
+                        <p className="mt-1 text-[10px] text-neutral-600">
+                          {new Date(a.created_at).toLocaleString("pt-BR")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => onApprove(a.user_id)}
+                        className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-500/15 px-2.5 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/25"
+                      >
+                        <Check size={12} /> Aprovar
+                      </button>
+                      <button
+                        onClick={() => onReject(a.user_id)}
+                        className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-rose-500/15 px-2.5 py-2 text-xs font-semibold text-rose-400 hover:bg-rose-500/25"
+                      >
+                        <X size={12} /> Rejeitar
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {others.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                Histórico
+              </p>
+              <ul className="space-y-2">
+                {others.map((a) => (
+                  <li
+                    key={a.id}
+                    className="rounded-xl border border-neutral-800 bg-neutral-950 p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-white">
+                          {a.business_name || "(sem nome)"}
+                        </p>
+                        <p className="truncate text-[11px] text-neutral-500">
+                          {a.user_name ?? "Usuário"} ·{" "}
+                          {new Date(a.updated_at).toLocaleDateString("pt-BR")}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                          statusStyle[a.status] ?? "bg-neutral-800 text-neutral-400"
+                        }`}
+                      >
+                        {a.status}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 
