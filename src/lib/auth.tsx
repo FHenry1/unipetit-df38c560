@@ -303,6 +303,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ? snackbars.find((s) => s.owner_id === user.id) ?? null
       : null;
 
+  // Auto-provision a snackbar if the user has the "owner" role but no snackbar row
+  // (e.g. promoted via admin path without one being created, or earlier RPC failure).
+  const provisioningRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user || user.role !== "owner") return;
+    if (mySnackbar) return;
+    if (snackbars.length === 0 && loading) return; // wait for initial load
+    if (provisioningRef.current === user.id) return;
+    provisioningRef.current = user.id;
+    (async () => {
+      const { error } = await supabase.rpc("become_owner");
+      if (!error) await loadSnackbars();
+    })();
+  }, [user, mySnackbar, snackbars.length, loading, loadSnackbars]);
+
   const refresh = useCallback(async () => {
     await Promise.all([
       loadUser(session),
