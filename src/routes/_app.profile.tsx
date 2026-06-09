@@ -557,7 +557,7 @@ function BecomeOwnerModal({ userId, onClose }: { userId: string; onClose: () => 
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 maxLength={120}
-                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-white outline-none focus:border-brand"
                 placeholder="Lanchonete X"
               />
             </label>
@@ -569,7 +569,7 @@ function BecomeOwnerModal({ userId, onClose }: { userId: string; onClose: () => 
                 value={documentUrl}
                 onChange={(e) => setDocumentUrl(e.target.value)}
                 maxLength={500}
-                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-white outline-none focus:border-brand"
                 placeholder="https://..."
               />
             </label>
@@ -582,7 +582,7 @@ function BecomeOwnerModal({ userId, onClose }: { userId: string; onClose: () => 
                 onChange={(e) => setNotes(e.target.value)}
                 maxLength={500}
                 rows={3}
-                className="mt-1 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
+                className="mt-1 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm text-white outline-none focus:border-brand"
               />
             </label>
             {status === "rejected" && (
