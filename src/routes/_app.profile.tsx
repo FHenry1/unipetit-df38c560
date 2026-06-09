@@ -155,13 +155,13 @@ function ProfilePage() {
                       <div className="h-14 w-14 shrink-0 rounded-xl bg-cover bg-center" style={{ backgroundImage: `url(${s.cover})` }} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <h4 className="truncate text-sm font-semibold">{s.name}</h4>
+                          <h4 className="truncate text-sm font-semibold text-white">{s.name}</h4>
                           <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold">
                             <Star size={10} className="fill-current text-amber-500" />
                             {s.rating.toFixed(1)}
                           </span>
                         </div>
-                        <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{s.location}</p>
+                        <p className="mt-0.5 line-clamp-1 text-xs text-white/70">{s.location}</p>
                       </div>
                       <ChevronRight size={16} className="shrink-0 text-muted-foreground" />
                     </Link>

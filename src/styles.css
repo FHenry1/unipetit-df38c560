@@ -45,14 +45,14 @@
   --background: oklch(0.32 0.13 18);
   --foreground: oklch(0.98 0.005 60);
 
-  /* White card surface */
-  --surface: oklch(1 0 0);
-  --surface-foreground: oklch(0.2 0.02 30);
+  /* Dark card surface */
+  --surface: oklch(0.18 0.01 30);
+  --surface-foreground: oklch(0.98 0.005 60);
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 30);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 30);
+  --card: oklch(0.18 0.01 30);
+  --card-foreground: oklch(0.98 0.005 60);
+  --popover: oklch(0.18 0.01 30);
+  --popover-foreground: oklch(0.98 0.005 60);
 
   /* Wine brand */
   --primary: oklch(0.32 0.13 18);
