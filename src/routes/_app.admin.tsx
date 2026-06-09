@@ -61,6 +61,12 @@ function AdminPage() {
     }
   }, [user, navigate]);
 
+  // Do not render admin UI for non-admins, even momentarily.
+  // Server-side RLS still blocks data access, but this avoids any UI flash.
+  if (!user || user.role !== "admin") {
+    return null;
+  }
+
   const pendingApps = useMemo(
     () => applications.filter((a) => a.status === "pending"),
     [applications],
