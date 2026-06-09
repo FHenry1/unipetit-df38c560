@@ -327,6 +327,14 @@ function OwnerMenu() {
                     <Pencil size={14} />
                   </button>
                   <button
+                    onClick={() => duplicateMenuItem(m.id)}
+                    className="grid h-8 w-8 place-items-center rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                    aria-label="Duplicar"
+                    title="Duplicar item"
+                  >
+                    <Copy size={14} />
+                  </button>
+                  <button
                     onClick={() => setDeleteTarget(m)}
                     className="grid h-8 w-8 place-items-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
                     aria-label="Remover"
