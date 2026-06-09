@@ -194,7 +194,13 @@ function SnackBarDetail() {
 
 /* ---------------- MENU ---------------- */
 
-function MenuList({ items }: { items: ReturnType<typeof useAuth>["snackbars"][number]["menu_items"] }) {
+function MenuList({
+  items,
+  accentColor,
+}: {
+  items: ReturnType<typeof useAuth>["snackbars"][number]["menu_items"];
+  accentColor: string;
+}) {
   if (items.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
@@ -207,7 +213,7 @@ function MenuList({ items }: { items: ReturnType<typeof useAuth>["snackbars"][nu
       {items.map((m, i) => (
         <li
           key={m.id}
-          className="group flex items-start justify-between gap-3 rounded-xl border border-border bg-background p-3.5 transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
+          className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3.5 transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
           style={{ animation: `fade-in 0.3s ease-out ${i * 0.04}s both` }}
         >
           <div className="min-w-0 flex-1">
@@ -217,10 +223,20 @@ function MenuList({ items }: { items: ReturnType<typeof useAuth>["snackbars"][nu
                 {m.description}
               </p>
             )}
+            <span
+              className="mt-2 inline-block rounded-full px-3 py-1 text-sm font-extrabold text-white"
+              style={{ backgroundColor: accentColor }}
+            >
+              R$ {m.price.toFixed(2).replace(".", ",")}
+            </span>
           </div>
-          <span className="shrink-0 rounded-full bg-brand-soft px-3 py-1.5 text-sm font-extrabold text-brand">
-            R$ {m.price.toFixed(2).replace(".", ",")}
-          </span>
+          {m.image_url && (
+            <img
+              src={m.image_url}
+              alt={m.name}
+              className="h-20 w-20 shrink-0 rounded-xl object-cover"
+            />
+          )}
         </li>
       ))}
     </ul>
