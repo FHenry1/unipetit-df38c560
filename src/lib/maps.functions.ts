@@ -55,7 +55,10 @@ export const geocodeSnackbar = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("snackbars")
       .update({ lat: loc.lat, lng: loc.lng })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .is("lat", null)
+      .is("lng", null);
+
 
     return { lat: loc.lat, lng: loc.lng };
   });
