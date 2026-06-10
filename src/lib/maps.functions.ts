@@ -15,15 +15,19 @@ export const geocodeSnackbar = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
 
-    // Verify snackbar exists. Any authenticated user may trigger geocoding —
-    // it only writes lat/lng for an existing public snackbar.
+    // Only fill missing coordinates. We never overwrite an existing lat/lng,
+    // so a non-owner cannot tamper with another snackbar's location.
     const { data: snack, error: snackErr } = await supabase
       .from("snackbars")
-      .select("id")
+      .select("id, lat, lng")
       .eq("id", data.id)
       .maybeSingle();
     if (snackErr) throw new Error("Lookup failed");
     if (!snack) throw new Error("Snackbar not found");
+    if (snack.lat != null && snack.lng != null) {
+      return { lat: snack.lat, lng: snack.lng };
+    }
+
 
 
     const lovableKey = process.env.LOVABLE_API_KEY;
@@ -51,7 +55,10 @@ export const geocodeSnackbar = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("snackbars")
       .update({ lat: loc.lat, lng: loc.lng })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .is("lat", null)
+      .is("lng", null);
+
 
     return { lat: loc.lat, lng: loc.lng };
   });
