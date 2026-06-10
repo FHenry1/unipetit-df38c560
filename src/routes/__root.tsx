@@ -8,7 +8,7 @@ import {
 import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import faviconAsset from "@/assets/favicon.png.asset.json";
+import faviconAsset from "@/assets/unipetit-logo-v2.png.asset.json";
 import { AuthProvider } from "@/lib/auth";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
