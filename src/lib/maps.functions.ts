@@ -51,7 +51,7 @@ export const geocodeSnackbar = createServerFn({ method: "POST" })
     if (!lovableKey || !gmKey) throw new Error("Maps credentials missing");
 
     const res = await fetch(
-      `${GATEWAY_URL}/maps/api/geocode/json?address=${encodeURIComponent(data.address)}`,
+      `${GATEWAY_URL}/maps/api/geocode/json?address=${encodeURIComponent(geocodeAddress)}`,
       {
         headers: {
           Authorization: `Bearer ${lovableKey}`,
