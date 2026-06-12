@@ -17,22 +17,36 @@ import {
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { OwnerHeader } from "@/components/OwnerHeader";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export const Route = createFileRoute("/_app/owner/profile")({
   component: OwnerProfilePage,
 });
 
 function OwnerProfilePage() {
-  const { user, logout, exitOwnerMode, mySnackbar, updateProfile, updatePassword, updateMySnackbar } = useAuth();
+  const {
+    user,
+    logout,
+    exitOwnerMode,
+    mySnackbar,
+    updateProfile,
+    updatePassword,
+    updateMySnackbar,
+  } = useAuth();
   const navigate = useNavigate();
   const [exiting, setExiting] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
 
   if (!user) return null;
 
-  const onExit = async () => {
+  const onExit = () => {
     if (exiting) return;
-    if (!window.confirm("Voltar ao modo consumidor? Sua lanchonete continua salva.")) return;
+    setConfirmExit(true);
+  };
+
+  const doExit = async () => {
+    setConfirmExit(false);
     setExiting(true);
     try {
       await exitOwnerMode();
@@ -56,7 +70,9 @@ function OwnerProfilePage() {
                 style={{ backgroundImage: `url(${mySnackbar.cover})` }}
               />
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">Sua lanchonete</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+                  Sua lanchonete
+                </p>
                 <h3 className="truncate text-sm font-bold text-white">{mySnackbar.name}</h3>
                 <p className="truncate text-xs text-neutral-400">{mySnackbar.location}</p>
               </div>
@@ -64,10 +80,7 @@ function OwnerProfilePage() {
           </div>
         )}
 
-        {mySnackbar && (
-          <AppearancePanel snackbar={mySnackbar} onSave={updateMySnackbar} />
-        )}
-
+        {mySnackbar && <AppearancePanel snackbar={mySnackbar} onSave={updateMySnackbar} />}
 
         {/* Edição de perfil */}
         <OwnerProfileForm
@@ -129,6 +142,16 @@ function OwnerProfilePage() {
       </div>
 
       {showPwd && <PasswordModal onClose={() => setShowPwd(false)} onSubmit={updatePassword} />}
+
+      <ConfirmDialog
+        open={confirmExit}
+        title="Voltar ao modo consumidor?"
+        description="Sua lanchonete continua salva. Você pode voltar ao painel do dono quando quiser."
+        confirmLabel="Voltar"
+        destructive={false}
+        onCancel={() => setConfirmExit(false)}
+        onConfirm={doExit}
+      />
     </div>
   );
 }
@@ -140,7 +163,11 @@ function OwnerProfileForm({
 }: {
   initial: { name: string; phone?: string | null; address?: string | null };
   email: string;
-  onSave: (patch: { name?: string; phone?: string; address?: string }) => Promise<{ ok: boolean; error?: string }>;
+  onSave: (patch: {
+    name?: string;
+    phone?: string;
+    address?: string;
+  }) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const [name, setName] = useState(initial.name);
   const [phone, setPhone] = useState(initial.phone ?? "");
@@ -157,7 +184,11 @@ function OwnerProfileForm({
     setMsg(null);
     const res = await onSave({ name, phone, address });
     setSaving(false);
-    setMsg(res.ok ? { kind: "ok", text: "Dados atualizados" } : { kind: "err", text: res.error ?? "Erro" });
+    setMsg(
+      res.ok
+        ? { kind: "ok", text: "Dados atualizados" }
+        : { kind: "err", text: res.error ?? "Erro" },
+    );
   };
 
   return (
@@ -174,7 +205,11 @@ function OwnerProfileForm({
       </Field>
 
       <Field icon={<Mail size={14} />} label="Email" readOnly>
-        <input value={email} disabled className="w-full bg-transparent text-sm text-neutral-500 outline-none" />
+        <input
+          value={email}
+          disabled
+          className="w-full bg-transparent text-sm text-neutral-500 outline-none"
+        />
       </Field>
 
       <Field icon={<Phone size={14} />} label="Telefone">
@@ -196,7 +231,9 @@ function OwnerProfileForm({
       </Field>
 
       {msg && (
-        <p className={`text-xs ${msg.kind === "ok" ? "text-emerald-400" : "text-rose-400"}`}>{msg.text}</p>
+        <p className={`text-xs ${msg.kind === "ok" ? "text-emerald-400" : "text-rose-400"}`}>
+          {msg.text}
+        </p>
       )}
 
       <button
@@ -223,7 +260,9 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className={`block rounded-xl border border-neutral-800 px-3 py-2 ${readOnly ? "opacity-70" : "focus-within:border-[#e85d75]"}`}>
+    <label
+      className={`block rounded-xl border border-neutral-800 px-3 py-2 ${readOnly ? "opacity-70" : "focus-within:border-[#e85d75]"}`}
+    >
       <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
         {icon}
         {label}
@@ -303,13 +342,26 @@ function AppearancePanel({
   onSave,
 }: {
   snackbar: { accent_color: string; logo_url: string | null; banner_url: string | null };
-  onSave: (patch: { accent_color?: string; logo_url?: string | null; banner_url?: string | null }) => Promise<void>;
+  onSave: (patch: {
+    accent_color?: string;
+    logo_url?: string | null;
+    banner_url?: string | null;
+  }) => Promise<void>;
 }) {
   const [accentColor, setAccentColor] = useState(snackbar.accent_color ?? "#e85d75");
   const [logoUrl, setLogoUrl] = useState(snackbar.logo_url ?? "");
   const [bannerUrl, setBannerUrl] = useState(snackbar.banner_url ?? "");
   const [saving, setSaving] = useState(false);
-  const presets = ["#e85d75", "#f97316", "#22c55e", "#3b82f6", "#a855f7", "#eab308", "#14b8a6", "#ef4444"];
+  const presets = [
+    "#e85d75",
+    "#f97316",
+    "#22c55e",
+    "#3b82f6",
+    "#a855f7",
+    "#eab308",
+    "#14b8a6",
+    "#ef4444",
+  ];
 
   return (
     <div className="space-y-4 rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
@@ -326,7 +378,9 @@ function AppearancePanel({
               onClick={() => setAccentColor(color)}
               style={{ backgroundColor: color }}
               className={`h-8 w-8 rounded-full transition active:scale-90 ${
-                accentColor === color ? "ring-2 ring-white ring-offset-2 ring-offset-neutral-900" : ""
+                accentColor === color
+                  ? "ring-2 ring-white ring-offset-2 ring-offset-neutral-900"
+                  : ""
               }`}
               aria-label={color}
             />
@@ -363,7 +417,11 @@ function AppearancePanel({
           className="mt-1 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white outline-none focus:border-[#e85d75]"
         />
         {logoUrl && (
-          <img src={logoUrl} alt="Logo" className="mt-2 h-16 w-16 rounded-xl border border-neutral-700 object-cover" />
+          <img
+            src={logoUrl}
+            alt="Logo"
+            className="mt-2 h-16 w-16 rounded-xl border border-neutral-700 object-cover"
+          />
         )}
       </label>
 
@@ -388,7 +446,11 @@ function AppearancePanel({
         onClick={async () => {
           setSaving(true);
           try {
-            await onSave({ accent_color: accentColor, logo_url: logoUrl || null, banner_url: bannerUrl || null });
+            await onSave({
+              accent_color: accentColor,
+              logo_url: logoUrl || null,
+              banner_url: bannerUrl || null,
+            });
           } finally {
             setSaving(false);
           }
