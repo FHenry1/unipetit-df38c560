@@ -444,6 +444,7 @@ export type Database = {
           rating: number
           snackbar_id: string
           user_id: string
+          user_name: string
         }[]
       }
       has_role: {
