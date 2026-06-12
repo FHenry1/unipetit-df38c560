@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export type Role = "user" | "owner" | "admin";
 
@@ -197,22 +198,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadReviews = useCallback(async () => {
-    const { data } = await supabase.rpc("get_visible_reviews");
-    const rows = (data ?? []) as any[];
-    const list: Review[] = rows.map((r: any) => ({
-      id: r.id,
-      snackbar_id: r.snackbar_id,
-      user_id: r.user_id,
-      user_name: (r.user_name ?? "").trim() || "Usuário",
-      rating: Number(r.rating),
-      comment: r.comment ?? "",
-      created_at: r.created_at,
-      owner_reply: r.owner_reply ?? null,
-      owner_reply_at: r.owner_reply_at ?? null,
-      owner_seen: !!r.owner_seen,
-    }));
-    setReviews(list);
-  }, []);
+  const { data, error } = await supabase
+    .from("reviews")
+    .select(`
+      id, snackbar_id, user_id, rating, comment,
+      created_at, owner_reply, owner_reply_at, owner_seen,
+      profiles(name)
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao carregar reviews:", error);
+    return;
+  }
+
+  const list: Review[] = (data ?? []).map((r: any) => ({
+    id: r.id,
+    snackbar_id: r.snackbar_id,
+    user_id: r.user_id,
+    user_name: (r.profiles?.name ?? "").trim() || "Usuário",
+    rating: Number(r.rating),
+    comment: r.comment ?? "",
+    created_at: r.created_at,
+    owner_reply: r.owner_reply ?? null,
+    owner_reply_at: r.owner_reply_at ?? null,
+    owner_seen: !!r.owner_seen,
+  }));
+  setReviews(list);
+}, []);
 
 
   const loadOrders = useCallback(async (uid: string | null) => {
@@ -697,8 +710,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
   if (error) {
     console.error("Erro ao deletar review:", error);
+    toast.error("Não foi possível excluir a avaliação.");
     throw new Error(error.message);
   }
+  toast.success("Avaliação excluída.");
   await Promise.all([loadReviews(), loadSnackbars()]);
 };
 
