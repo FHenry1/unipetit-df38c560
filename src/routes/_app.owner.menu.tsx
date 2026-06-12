@@ -1,16 +1,35 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Check, ChevronDown, Copy, Eye, GripVertical, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  Copy,
+  Eye,
+  GripVertical,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { OwnerHeader } from "@/components/OwnerHeader";
 import { MenuPreview } from "@/components/MenuPreview";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAuth, type MenuItem } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/owner/menu")({
   component: OwnerMenu,
 });
 
-type ItemDraft = { name: string; description: string; price: string; category: string; image_url: string };
+type ItemDraft = {
+  name: string;
+  description: string;
+  price: string;
+  category: string;
+  image_url: string;
+};
 const emptyDraft: ItemDraft = { name: "", description: "", price: "", category: "", image_url: "" };
 
 function OwnerMenu() {
@@ -57,9 +76,7 @@ function OwnerMenu() {
     }
     if (!q) return list;
     return list.filter(
-      (m) =>
-        m.name.toLowerCase().includes(q) ||
-        (m.description ?? "").toLowerCase().includes(q),
+      (m) => m.name.toLowerCase().includes(q) || (m.description ?? "").toLowerCase().includes(q),
     );
   }, [mySnackbar, search, activeCategory]);
 
@@ -67,10 +84,7 @@ function OwnerMenu() {
     return (
       <div className="px-5 pt-10 text-sm text-neutral-400">
         Esta área é exclusiva para donos de lanchonete.{" "}
-        <button
-          onClick={() => navigate({ to: "/owner" })}
-          className="text-[#e85d75] underline"
-        >
+        <button onClick={() => navigate({ to: "/owner" })} className="text-[#e85d75] underline">
           Voltar
         </button>
       </div>
@@ -199,9 +213,7 @@ function OwnerMenu() {
       <div className="px-5 -mt-6 space-y-4">
         <section className="rounded-2xl bg-neutral-900 border border-neutral-800 p-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">
-              Informações da lanchonete
-            </h2>
+            <h2 className="text-sm font-semibold text-white">Informações da lanchonete</h2>
             <button
               onClick={() => {
                 setInfoDraft(mySnackbar);
@@ -274,10 +286,7 @@ function OwnerMenu() {
               className="w-full bg-transparent text-sm text-white placeholder:text-neutral-600 focus:outline-none"
             />
             {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="text-neutral-500 hover:text-white"
-              >
+              <button onClick={() => setSearch("")} className="text-neutral-500 hover:text-white">
                 <X size={14} />
               </button>
             )}
@@ -290,12 +299,20 @@ function OwnerMenu() {
             onDelete={deleteCategory}
           />
 
-
           {categories.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
-              <CategoryChip active={activeCategory === "__all"} label="Todos" onClick={() => setActiveCategory("__all")} />
+              <CategoryChip
+                active={activeCategory === "__all"}
+                label="Todos"
+                onClick={() => setActiveCategory("__all")}
+              />
               {categories.map((c) => (
-                <CategoryChip key={c} active={activeCategory === c} label={c} onClick={() => setActiveCategory(c)} />
+                <CategoryChip
+                  key={c}
+                  active={activeCategory === c}
+                  label={c}
+                  onClick={() => setActiveCategory(c)}
+                />
               ))}
             </div>
           )}
@@ -331,14 +348,14 @@ function OwnerMenu() {
                 className={`flex items-start gap-2 rounded-xl border bg-neutral-950 p-3 transition ${
                   dragId === m.id ? "opacity-40" : ""
                 } ${
-                  overId === m.id && dragId !== m.id
-                    ? "border-[#e85d75]"
-                    : "border-neutral-800"
+                  overId === m.id && dragId !== m.id ? "border-[#e85d75]" : "border-neutral-800"
                 } ${!m.is_active ? "opacity-60" : ""}`}
               >
                 <span
                   className={`mt-0.5 grid h-7 w-5 shrink-0 place-items-center text-neutral-600 ${
-                    search ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing hover:text-neutral-300"
+                    search
+                      ? "cursor-not-allowed"
+                      : "cursor-grab active:cursor-grabbing hover:text-neutral-300"
                   }`}
                   title={search ? "Limpe a busca para reordenar" : "Arraste"}
                 >
@@ -370,10 +387,7 @@ function OwnerMenu() {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <Switch
-                    active={m.is_active}
-                    onClick={() => toggleMenuItemActive(m.id)}
-                  />
+                  <Switch active={m.is_active} onClick={() => toggleMenuItemActive(m.id)} />
                   <button
                     onClick={() => openEdit(m)}
                     className="grid h-8 w-8 place-items-center rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
@@ -404,10 +418,7 @@ function OwnerMenu() {
       </div>
 
       {modalMode && (
-        <Modal
-          title={modalMode === "add" ? "Novo item" : "Editar item"}
-          onClose={closeModal}
-        >
+        <Modal title={modalMode === "add" ? "Novo item" : "Editar item"} onClose={closeModal}>
           <div className="space-y-3">
             <Input
               label="Nome"
@@ -435,7 +446,9 @@ function OwnerMenu() {
                 {[...(mySnackbar?.snackbar_categories ?? [])]
                   .sort((a, b) => a.position - b.position)
                   .map((c) => (
-                    <option key={c.id} value={c.name}>{c.name}</option>
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
                   ))}
               </select>
             </label>
@@ -474,8 +487,8 @@ function OwnerMenu() {
         <Modal title="Remover item" onClose={() => setDeleteTarget(null)}>
           <p className="text-sm text-neutral-300">
             Tem certeza que deseja remover{" "}
-            <strong className="text-white">"{deleteTarget.name}"</strong> do
-            cardápio? Esta ação não pode ser desfeita.
+            <strong className="text-white">"{deleteTarget.name}"</strong> do cardápio? Esta ação não
+            pode ser desfeita.
           </p>
           <div className="mt-4 flex gap-2">
             <button
@@ -506,11 +519,7 @@ function OwnerMenu() {
         </button>
       )}
 
-      <MenuPreview
-        snackbar={mySnackbar}
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-      />
+      <MenuPreview snackbar={mySnackbar} open={previewOpen} onClose={() => setPreviewOpen(false)} />
     </div>
   );
 }
@@ -535,10 +544,7 @@ function Modal({
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-base font-semibold text-white">{title}</h3>
-          <button
-            onClick={onClose}
-            className="text-neutral-400 hover:text-white"
-          >
+          <button onClick={onClose} className="text-neutral-400 hover:text-white">
             <X size={18} />
           </button>
         </div>
@@ -599,15 +605,21 @@ function Input({
   );
 }
 
-function CategoryChip({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+function CategoryChip({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
-        active
-          ? "bg-[#5d0a1a] text-white"
-          : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+        active ? "bg-[#5d0a1a] text-white" : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
       }`}
     >
       {label}
@@ -630,7 +642,15 @@ function CategoriesManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
   const [busy, setBusy] = useState(false);
+  const [catToDelete, setCatToDelete] = useState<{ id: string; name: string } | null>(null);
   const sorted = [...items].sort((a, b) => a.position - b.position);
+
+  const confirmDeleteCategory = async () => {
+    if (!catToDelete) return;
+    const { id } = catToDelete;
+    setCatToDelete(null);
+    await onDelete(id);
+  };
 
   const submitNew = async () => {
     if (!newName.trim() || busy) return;
@@ -714,11 +734,7 @@ function CategoriesManager({
                   <Pencil size={12} />
                 </button>
                 <button
-                  onClick={async () => {
-                    if (window.confirm(`Excluir a categoria "${c.name}"? Os itens dela ficarão sem categoria.`)) {
-                      await onDelete(c.id);
-                    }
-                  }}
+                  onClick={() => setCatToDelete({ id: c.id, name: c.name })}
                   className="grid h-7 w-7 place-items-center rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20"
                   aria-label="Excluir"
                 >
@@ -747,6 +763,14 @@ function CategoriesManager({
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!catToDelete}
+        title={`Excluir "${catToDelete?.name ?? ""}"?`}
+        description="Os itens dessa categoria ficarão sem categoria, mas continuam no cardápio."
+        onCancel={() => setCatToDelete(null)}
+        onConfirm={confirmDeleteCategory}
+      />
     </details>
   );
 }
