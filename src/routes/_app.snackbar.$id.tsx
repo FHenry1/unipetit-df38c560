@@ -357,7 +357,7 @@ function ReviewsTab({
             <div className="mt-2">
               <StarRow rating={myReview.rating} size={18} />
               {myReview.comment && (
-                <p className="mt-2 text-sm text-white">{myReview.comment}</p>
+                <p className="mt-2 text-sm text-surface-foreground">{myReview.comment}</p>
               )}
               {myReview.owner_reply && (
                 <OwnerReplyBlock
