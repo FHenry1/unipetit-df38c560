@@ -20,6 +20,16 @@ import {
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_app/admin")({
   component: AdminPage,
@@ -47,7 +57,16 @@ interface AdminUser {
 }
 
 function AdminPage() {
-  const { user, snackbars, reviews, logout, refresh, deleteReview, adminDeleteSnackbar, adminCreateSnackbar } = useAuth();
+  const {
+    user,
+    snackbars,
+    reviews,
+    logout,
+    refresh,
+    deleteReview,
+    adminDeleteSnackbar,
+    adminCreateSnackbar,
+  } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("users");
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -188,10 +207,24 @@ function AdminPage() {
     }
   };
 
+  const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
+
+  // window.confirm é bloqueado no preview do Lovable (iframe) e em alguns
+  // celulares — por isso "nada acontecia". Agora usamos um diálogo próprio.
   const removeReview = async (id: string) => {
-    if (!window.confirm("Excluir esta avaliação?")) return;
-    await deleteReview(id);
-    toast.success("Avaliação removida");
+    setReviewToDelete(id);
+  };
+
+  const confirmRemoveReview = async () => {
+    if (!reviewToDelete) return;
+    const id = reviewToDelete;
+    setReviewToDelete(null);
+    try {
+      await deleteReview(id);
+      toast.success("Avaliação removida");
+    } catch {
+      /* deleteReview já mostra o toast de erro */
+    }
   };
 
   return (
@@ -236,7 +269,12 @@ function AdminPage() {
       <div className="-mt-6 px-5 space-y-5">
         {/* Tabs */}
         <nav className="grid grid-cols-5 gap-1.5 rounded-2xl bg-neutral-900 p-1.5 border border-neutral-800">
-          <AdminTab active={tab === "users"} onClick={() => setTab("users")} icon={<Users size={14} />} label="Usuários" />
+          <AdminTab
+            active={tab === "users"}
+            onClick={() => setTab("users")}
+            icon={<Users size={14} />}
+            label="Usuários"
+          />
           <AdminTab
             active={tab === "applications"}
             onClick={() => setTab("applications")}
@@ -244,9 +282,24 @@ function AdminPage() {
             label="Pedidos"
             badge={pendingApps.length || undefined}
           />
-          <AdminTab active={tab === "reviews"} onClick={() => setTab("reviews")} icon={<MessageSquare size={14} />} label="Reviews" />
-          <AdminTab active={tab === "snackbars"} onClick={() => setTab("snackbars")} icon={<Store size={14} />} label="Lojas" />
-          <AdminTab active={tab === "reports"} onClick={() => setTab("reports")} icon={<BarChart3 size={14} />} label="Relatos" />
+          <AdminTab
+            active={tab === "reviews"}
+            onClick={() => setTab("reviews")}
+            icon={<MessageSquare size={14} />}
+            label="Reviews"
+          />
+          <AdminTab
+            active={tab === "snackbars"}
+            onClick={() => setTab("snackbars")}
+            icon={<Store size={14} />}
+            label="Lojas"
+          />
+          <AdminTab
+            active={tab === "reports"}
+            onClick={() => setTab("reports")}
+            icon={<BarChart3 size={14} />}
+            label="Relatos"
+          />
         </nav>
 
         {tab === "applications" && (
@@ -281,6 +334,14 @@ function AdminPage() {
         )}
         {tab === "reports" && <ReportsTab snackbars={snackbars} reviews={reviews} />}
       </div>
+
+      <ConfirmDialog
+        open={!!reviewToDelete}
+        title="Excluir avaliação?"
+        description="A avaliação será removida permanentemente. Esta ação não pode ser desfeita."
+        onCancel={() => setReviewToDelete(null)}
+        onConfirm={confirmRemoveReview}
+      />
     </div>
   );
 }
@@ -513,8 +574,8 @@ function UsersTab({
                   </div>
                   <p className="truncate text-[10px] text-neutral-500">{u.id}</p>
                 </div>
-                {!isAdmin && (
-                  isOwner ? (
+                {!isAdmin &&
+                  (isOwner ? (
                     <button
                       onClick={() => onRevoke(u.id)}
                       className="flex items-center gap-1 rounded-lg bg-rose-500/15 px-2.5 py-1.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/25"
@@ -528,8 +589,7 @@ function UsersTab({
                     >
                       <ShieldCheck size={12} /> Tornar vendedor
                     </button>
-                  )
-                )}
+                  ))}
               </li>
             );
           })}
@@ -574,7 +634,9 @@ function ReviewsTab({
                       <Star
                         key={n}
                         size={10}
-                        className={n <= r.rating ? "fill-amber-400 text-amber-400" : "text-neutral-700"}
+                        className={
+                          n <= r.rating ? "fill-amber-400 text-amber-400" : "text-neutral-700"
+                        }
                       />
                     ))}
                   </div>
@@ -620,15 +682,17 @@ function ReportsTab({
     ? (snackbars.reduce((a, s) => a + s.rating, 0) / snackbars.length).toFixed(1)
     : "—";
 
-  const topSnackbars = [...snackbars]
-    .sort((a, b) => b.view_count - a.view_count)
-    .slice(0, 5);
+  const topSnackbars = [...snackbars].sort((a, b) => b.view_count - a.view_count).slice(0, 5);
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <StatCard icon={<Store size={16} />} value={String(totalSnackbars)} label="Lanchonetes" />
-        <StatCard icon={<MessageSquare size={16} />} value={String(totalReviews)} label="Avaliações" />
+        <StatCard
+          icon={<MessageSquare size={16} />}
+          value={String(totalReviews)}
+          label="Avaliações"
+        />
         <StatCard icon={<BarChart3 size={16} />} value={String(totalViews)} label="Visualizações" />
         <StatCard icon={<Star size={16} />} value={avgRating} label="Nota média" />
       </div>
@@ -637,7 +701,10 @@ function ReportsTab({
         <h2 className="text-sm font-semibold">Top lanchonetes (por visualizações)</h2>
         <ul className="mt-3 space-y-2">
           {topSnackbars.map((s, idx) => (
-            <li key={s.id} className="flex items-center justify-between rounded-xl bg-neutral-950 p-3">
+            <li
+              key={s.id}
+              className="flex items-center justify-between rounded-xl bg-neutral-950 p-3"
+            >
               <div className="flex items-center gap-3">
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-[#5d0a1a] text-xs font-bold text-white">
                   {idx + 1}
@@ -721,8 +788,16 @@ function SnackbarsTab({
     );
   }, [snackbars, search]);
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Excluir a lanchonete "${name}"? Esta ação é irreversível.`)) return;
+  const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const handleDelete = (id: string, name: string) => {
+    setToDelete({ id, name });
+  };
+
+  const confirmDeleteSnackbar = async () => {
+    if (!toDelete) return;
+    const { id } = toDelete;
+    setToDelete(null);
     setDeleting(id);
     try {
       await onDelete(id);
@@ -745,7 +820,10 @@ function SnackbarsTab({
       description: form.description.trim(),
       location: form.location.trim(),
       owner_id: form.owner_id,
-      categories: form.categories.split(",").map((c) => c.trim()).filter(Boolean),
+      categories: form.categories
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean),
       opening_time: form.opening_time || null,
       closing_time: form.closing_time || null,
     });
@@ -753,7 +831,15 @@ function SnackbarsTab({
     if (result.ok) {
       toast.success("Lanchonete criada!");
       setShowModal(false);
-      setForm({ name: "", description: "", location: "", owner_id: "", categories: "", opening_time: "", closing_time: "" });
+      setForm({
+        name: "",
+        description: "",
+        location: "",
+        owner_id: "",
+        categories: "",
+        opening_time: "",
+        closing_time: "",
+      });
     } else {
       toast.error(result.error ?? "Erro ao criar.");
     }
@@ -795,7 +881,10 @@ function SnackbarsTab({
                 </span>
                 <span className="text-[10px] text-neutral-500">{s.view_count} views</span>
                 {s.categories.slice(0, 2).map((c) => (
-                  <span key={c} className="rounded-full bg-neutral-800 px-1.5 py-0.5 text-[9px] text-neutral-400">
+                  <span
+                    key={c}
+                    className="rounded-full bg-neutral-800 px-1.5 py-0.5 text-[9px] text-neutral-400"
+                  >
                     {c}
                   </span>
                 ))}
@@ -858,7 +947,9 @@ function SnackbarsTab({
               >
                 <option value="">Selecionar proprietário (owner) *</option>
                 {owners.map((o) => (
-                  <option key={o.id} value={o.id}>{o.name}</option>
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
                 ))}
               </select>
               {owners.length === 0 && (
@@ -904,6 +995,54 @@ function SnackbarsTab({
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title={`Excluir "${toDelete?.name ?? ""}"?`}
+        description="Todos os dados da lanchonete serão removidos. Esta ação é irreversível."
+        onCancel={() => setToDelete(null)}
+        onConfirm={confirmDeleteSnackbar}
+      />
     </section>
+  );
+}
+
+function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel = "Excluir",
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={(o) => !o && onCancel()}>
+      <AlertDialogContent className="border-neutral-800 bg-neutral-900 text-neutral-100">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="uppercase tracking-wide">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-neutral-400">
+            {description}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="border-neutral-700 bg-transparent text-xs font-bold uppercase tracking-wide text-neutral-200 hover:bg-neutral-800 hover:text-white">
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="bg-rose-600 text-xs font-bold uppercase tracking-wide text-white hover:bg-rose-500"
+          >
+            {confirmLabel}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
