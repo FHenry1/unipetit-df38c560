@@ -694,9 +694,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteReview: AuthContextValue["deleteReview"] = async (reviewId) => {
-    await supabase.from("reviews").delete().eq("id", reviewId);
-    await Promise.all([loadReviews(), loadSnackbars()]);
-  };
+  const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+  if (error) {
+    console.error("Erro ao deletar review:", error);
+    throw new Error(error.message);
+  }
+  await Promise.all([loadReviews(), loadSnackbars()]);
+};
 
   const updateOrderStatus: AuthContextValue["updateOrderStatus"] = async (id, status) => {
     await supabase.from("orders").update({ status }).eq("id", id);
