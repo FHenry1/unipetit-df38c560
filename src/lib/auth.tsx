@@ -55,7 +55,8 @@ export interface SnackBar {
 export interface Review {
   id: string;
   snackbar_id: string;
-  user_id: string;
+  /** null quando o review é de outra pessoa (privacidade) */
+  user_id: string | null;
   user_name: string;
   rating: number;
   comment: string;
@@ -198,14 +199,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadReviews = useCallback(async () => {
-  const { data, error } = await supabase
-    .from("reviews")
-    .select(`
-      id, snackbar_id, user_id, rating, comment,
-      created_at, owner_reply, owner_reply_at, owner_seen,
-      profiles(name)
-    `)
-    .order("created_at", { ascending: false });
+  // Usa a função segura do banco (get_visible_reviews) em vez de ler a
+  // tabela direto — a tabela tem RLS restritivo e cada conta só veria
+  // os próprios reviews. A função retorna todos, protegendo o user_id.
+  const { data, error } = await supabase.rpc("get_visible_reviews");
 
   if (error) {
     console.error("Erro ao carregar reviews:", error);
@@ -215,8 +212,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const list: Review[] = (data ?? []).map((r: any) => ({
     id: r.id,
     snackbar_id: r.snackbar_id,
-    user_id: r.user_id,
-    user_name: (r.profiles?.name ?? "").trim() || "Usuário",
+    user_id: r.user_id ?? null,
+    user_name: (r.user_name ?? "").trim() || "Usuário",
     rating: Number(r.rating),
     comment: r.comment ?? "",
     created_at: r.created_at,
