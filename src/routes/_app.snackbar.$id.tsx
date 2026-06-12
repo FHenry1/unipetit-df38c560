@@ -453,13 +453,13 @@ function ReviewCard({ review }: { review: Review }) {
           {initial}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-white">{review.user_name}</p>
-          <p className="text-[10px] text-white">{when}</p>
+          <p className="truncate text-sm font-semibold text-foreground">{review.user_name}</p>
+          <p className="text-[10px] text-muted-foreground">{when}</p>
         </div>
         <StarRow rating={review.rating} size={12} />
       </div>
       {review.comment && (
-        <p className="mt-2 text-sm text-white">
+        <p className="mt-2 text-sm text-foreground leading-relaxed">
           {shown}{" "}
           {long && (
             <button
@@ -484,13 +484,13 @@ function OwnerReplyBlock({ reply, at }: { reply: string; at: string | null }) {
     : "";
   return (
     <div className="mt-3 rounded-lg border-l-2 border-brand bg-brand-soft/60 p-3">
-      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-white">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-brand">
         <MessageCircle size={10} /> Resposta do dono
         {when && (
-          <span className="ml-auto font-normal text-white/70">{when}</span>
+          <span className="ml-auto font-normal text-muted-foreground">{when}</span>
         )}
       </p>
-      <p className="mt-1 text-sm text-white">{reply}</p>
+      <p className="mt-1 text-sm text-foreground">{reply}</p>
     </div>
   );
 }
