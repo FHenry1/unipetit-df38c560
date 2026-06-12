@@ -46,7 +46,7 @@ function HomePage() {
     let list = snackbars.filter((s) => {
       if (category !== "all" && !s.categories.includes(category)) return false;
       if (q) {
-        const hay = (s.name + " " + s.description + " " + s.location).toLowerCase();
+        const hay = (s.name + " " + s.description + " " + s.location + " " + s.menu_items.map((m) => m.name).join(" ")).toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
