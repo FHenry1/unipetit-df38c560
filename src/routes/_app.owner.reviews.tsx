@@ -60,10 +60,10 @@ function OwnerReviews() {
     return <div className="px-5 pt-10 text-sm text-neutral-400">Sem lanchonete.</div>;
   }
 
-  const avg =
-    myReviews.length > 0
-      ? myReviews.reduce((a, r) => a + r.rating, 0) / myReviews.length
-      : 0;
+  // Usa a nota oficial do banco (a mesma exibida no dashboard do dono),
+  // calculada pelo gatilho recalc_snackbar_rating, em vez de recalcular
+  // só com os reviews carregados nesta tela — assim os dois números batem.
+  const avg = mySnackbar.rating ?? 0;
 
   const openReply = (r: Review) => {
     setReplyingId(r.id);
@@ -306,4 +306,3 @@ function Chip({
     </button>
   );
 }
-
