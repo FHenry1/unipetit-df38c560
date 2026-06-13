@@ -213,14 +213,14 @@ function ProfilePage() {
                         </span>
                       </div>
                       {r.comment && (
-                        <p className="mt-2 text-sm leading-relaxed text-white">"{r.comment}"</p>
+                        <p className="mt-2 text-sm leading-relaxed text-surface-foreground">"{r.comment}"</p>
                       )}
                       {r.owner_reply && (
                         <div className="mt-3 rounded-xl border-l-2 border-brand bg-brand-soft/50 px-3 py-2">
                           <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-brand">
                             <MessageSquare size={10} /> Resposta do dono
                           </p>
-                          <p className="mt-0.5 text-xs leading-relaxed text-white">{r.owner_reply}</p>
+                          <p className="mt-0.5 text-xs leading-relaxed text-surface-foreground">{r.owner_reply}</p>
                         </div>
                       )}
                     </li>
@@ -604,4 +604,3 @@ function BecomeOwnerModal({ userId, onClose }: { userId: string; onClose: () => 
     </div>
   );
 }
-
